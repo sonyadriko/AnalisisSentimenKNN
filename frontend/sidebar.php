@@ -43,6 +43,18 @@
                         <span> Data Training </span>
                     </a>
                 </li>
+                <li>
+                    <a href="preprocessing.php">
+                        <i data-feather="aperture"></i>
+                        <span>Preprocessing</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="tf-idf.php">
+                        <i data-feather="aperture"></i>
+                        <span>TF IDF</span>
+                    </a>
+                </li>
 
                 <li>
                     <a href="data-testing.php">
