@@ -8,37 +8,22 @@
     <meta name="description" content="KNN Sentimen Analisis" />
     <meta name="author" content="KNN" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <!-- App favicon -->
-    <!-- <link rel="shortcut icon" href="assets/images/favicon.ico"> -->
-    <!-- App css -->
     <link href="assets/css/app.min.css" rel="stylesheet" type="text/css" id="app-style" />
-    <!-- Icons -->
     <link href="assets/css/icons.min.css" rel="stylesheet" type="text/css" />
-
 </head>
 
-<!-- body start -->
-
 <body data-menu-color="dark" data-sidebar="default">
-
-    <!-- Begin page -->
     <div id="app-layout">
-
-
         <!-- Topbar Start -->
         <?php include 'topbar.php' ?>
         <!-- end Topbar -->
-
         <!-- Left Sidebar Start -->
         <?php include 'sidebar.php' ?>
         <!-- Left Sidebar End -->
-
         <div class="content-page">
             <div class="content">
-
                 <!-- Start Content-->
                 <div class="container-xxl">
-
                     <div class="py-3 d-flex align-items-sm-center flex-sm-row flex-column">
                         <div class="flex-grow-1">
                             <h4 class="fs-18 fw-semibold m-0">Dashboard</h4>
@@ -68,7 +53,6 @@
                                         <div id="hasilSentimen">Hasil sentimen :</div><br>
                                         <div id="accuracyPositif">Accuracy Positif :</div><br>
                                         <div id="accuracyNegatif">Accuracy Negatif :</div><br>
-                                        <!-- <div id="dataRank">data, number rank, cosine similarity, tweet</div> -->
                                         <table id="dataRank" border="1">
                                             <thead>
                                                 <tr>
@@ -79,28 +63,21 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <!-- Data akan dimasukkan di sini -->
+                                                <!-- Data will be inserted here -->
                                             </tbody>
                                         </table>
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- <div class="row" id="resultsContainer"> -->
-                            <!-- Hasil akan ditambahkan melalui JavaScript -->
                         </div>
                     </div>
                     <button id="startProcessBtn">Mulai Proses</button>
-
                 </div>
             </div> <!-- container-fluid -->
         </div> <!-- content -->
         <!-- Footer Start -->
-        <?php include 'footer.php'?>
+        <?php include 'footer.php' ?>
         <!-- end Footer -->
-
-    </div>
-
     </div>
     <!-- END wrapper -->
 
@@ -118,7 +95,6 @@
         const dataRankTableBody = document.querySelector('#dataRank tbody');
 
         startProcessBtn.addEventListener('click', function() {
-            // Tampilkan SweetAlert loading
             Swal.fire({
                 title: 'Proses sedang berlangsung',
                 text: 'Mohon tunggu...',
@@ -128,16 +104,11 @@
                 }
             });
 
-            // Lakukan request preprocessing dan tf-idf
             axios.get('http://127.0.0.1:5000/preprocessing')
                 .then(response => {
-                    console.log(response.data);
                     return axios.get('http://127.0.0.1:5000/tf-idf');
                 })
                 .then(response => {
-                    console.log(response.data);
-
-                    // Tutup SweetAlert loading dan tampilkan pesan sukses
                     Swal.fire({
                         icon: 'success',
                         title: 'Proses selesai',
@@ -146,8 +117,6 @@
                 })
                 .catch(error => {
                     console.error('Error processing data:', error);
-
-                    // Tutup SweetAlert loading dan tampilkan pesan error
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
@@ -174,113 +143,49 @@
                         const sentimenPelabelanResponse = responses[1].data;
                         const similarityResponse = responses[2].data;
 
-                        // Mengubah elemen HTML dengan hasil yang diterima
                         hasilSentimenElem.textContent =
-                            `Hasil sentimen: ${sentimenPelabelanResponse[0].aktual}`;
+                            `Hasil sentimen: ${similarityResponse.sentiment}`;
                         accuracyPositifElem.textContent =
-                            `Accuracy Positif: ${similarityResponse.accuracy_positif}`;
+                            `Accuracy Positif: ${similarityResponse.accuracy_positif.toFixed(2)}`;
                         accuracyNegatifElem.textContent =
-                            `Accuracy Negatif: ${similarityResponse.accuracy_negatif}`;
+                            `Accuracy Negatif: ${similarityResponse.accuracy_negatif.toFixed(2)}`;
 
-                        // Membuat baris baru untuk setiap hasil dalam similarityResponse.results
+                        dataRankTableBody.innerHTML = ''; // Clear previous results
                         similarityResponse.results.forEach(result => {
                             const row = document.createElement('tr');
-
-                            const dataNumberCell = document.createElement('td');
-                            dataNumberCell.textContent = result.data_number;
-                            row.appendChild(dataNumberCell);
-
-                            const rankCell = document.createElement('td');
-                            rankCell.textContent = result.rank;
-                            row.appendChild(rankCell);
-
-                            const cosineSimilarityCell = document.createElement('td');
-                            cosineSimilarityCell.textContent = result.cosine_similarity;
-                            row.appendChild(cosineSimilarityCell);
-
-                            const tweetCell = document.createElement('td');
-                            tweetCell.textContent = result.tweet;
-                            row.appendChild(tweetCell);
-
+                            row.innerHTML = `
+                                    <td>${result.data_number}</td>
+                                    <td>${result.rank}</td>
+                                    <td>${result.cosine_similarity.toFixed(2)}</td>
+                                    <td>${result.tweet}</td>
+                                `;
                             dataRankTableBody.appendChild(row);
                         });
 
-                        alert('Proses analisis berhasil dilakukan!');
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Proses selesai',
+                            text: 'Proses analisis berhasil dilakukan!'
+                        });
                     })
                     .catch(error => {
                         console.error('Error processing data:', error);
-                        alert('Terjadi kesalahan saat memproses data.');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Terjadi kesalahan saat memproses data.'
+                        });
                     });
             } else {
-                alert('Mohon isi tweet terlebih dahulu.');
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Peringatan',
+                    text: 'Mohon isi tweet terlebih dahulu.'
+                });
             }
         });
     });
     </script>
-    <!-- <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const addTweetForm = document.querySelector('#addTweetForm');
-        const preprocessingResults = document.querySelector('#preprocessingResults');
-        const tfidfResults = document.querySelector('#tfidfResults');
-
-        addTweetForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-
-            const tweetInput = document.querySelector('#tweetInput').value.trim();
-
-            if (tweetInput !== '') {
-                axios.post('http://127.0.0.1:5000/add-tweet', {
-                        // axios.post('/add-tweet', {
-                        tweet: tweetInput
-                    })
-                    .then(response => {
-                        if (response.data === 'success') {
-                            alert('Tweet berhasil ditambahkan!');
-                            // Optionally update UI or trigger further actions
-                        } else {
-                            alert('Gagal menambahkan tweet.');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error adding tweet:', error);
-                        alert('Terjadi kesalahan saat menambahkan tweet.');
-                    });
-            } else {
-                alert('Mohon isi tweet terlebih dahulu.');
-            }
-        });
-
-        function fetchPreprocessingResults() {
-            fetch('http://127.0.0.1:5000/preprocessing')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Error fetching preprocessing results');
-                    }
-                    return response.text();
-                })
-                .then(data => {
-                    preprocessingResults.innerHTML = data;
-                    // Jika preprocessing berhasil, lakukan fetch untuk TF-IDF
-                    fetchTFIDFResults();
-                })
-                .catch(error => console.error('Error fetching preprocessing results:', error));
-        }
-
-        function fetchTFIDFResults() {
-            fetch('http://127.0.0.1:5000/tf-idf')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Error fetching TF-IDF results');
-                    }
-                    return response.text();
-                })
-                .then(data => {
-                    tfidfResults.innerHTML = data;
-                })
-                .catch(error => console.error('Error fetching TF-IDF results:', error));
-        }
-    });
-    </script> -->
 </body>
 
 </html>
