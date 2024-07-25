@@ -45,6 +45,62 @@
                         </div>
                     </div>
                     <div class="row">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="flex mt-6">
+                                    <form action="data-training.php" method="post" enctype="multipart/form-data"
+                                        class="shadow-md rounded px-8 pt-6 pb-8">
+                                        <label for="excelFile" class="text-gray-700 text-sm font-bold mb-2">Unggah
+                                            File
+                                            Excel:</label>
+                                        <input type="file" name="excelFile" id="excelFile" accept=".csv"
+                                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                                        <button type="submit" class="btn btn-primary mt-6">Unggah</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php
+                    if (isset($_FILES['excelFile'])) {
+                        $errors = [];
+                        $file_name = 'data_tweet.csv';
+                        $file_tmp = $_FILES['excelFile']['tmp_name'];
+                        $upload_path = '../backend/' . $file_name;
+                        $file_extension = pathinfo($_FILES['excelFile']['name'], PATHINFO_EXTENSION);
+
+                        if ($_FILES['excelFile']['error'] !== UPLOAD_ERR_OK) {
+                            $errors[] = 'An error occurred during file upload.';
+                        } elseif ($file_extension != 'csv') {
+                            $errors[] = 'Only CSV files are allowed.';
+                            error_log('Invalid file format. Only CSV files are allowed.');
+                        } else {
+                            if (move_uploaded_file($file_tmp, $upload_path)) {
+                                echo "<script>Swal.fire({
+                                        icon: 'success',
+                                        title: 'File uploaded successfully!',
+                                        showConfirmButton: false,
+                                        timer: 1500
+                                    })</script>";
+                                error_log('File uploaded: ' . $file_name);
+                            } else {
+                                $errors[] = 'Failed to upload file.';
+                                error_log('Failed to upload file: ' . $file_name);
+                            }
+                        }
+
+                        if (!empty($errors)) {
+                            foreach ($errors as $error) {
+                                echo "<script>Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error!',
+                                        text: '$error',
+                                    })</script>";
+                            }
+                        }
+                    }
+                    ?>
+                    <div class="row">
                         <div class="col-md-12 col-xl-12">
                             <div class="card">
                                 <div class="card-body">

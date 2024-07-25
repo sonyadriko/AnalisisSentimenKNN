@@ -62,12 +62,12 @@
                         <span> Data Testing </span>
                     </a>
                 </li>
-                <li>
+                <!-- <li>
                     <a href="chart.php">
                         <i data-feather="globe"></i>
                         <span>Chart </span>
                     </a>
-                </li>
+                </li> -->
             </ul>
 
         </div>

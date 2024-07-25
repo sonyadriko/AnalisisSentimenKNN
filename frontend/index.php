@@ -10,6 +10,30 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <link href="assets/css/app.min.css" rel="stylesheet" type="text/css" id="app-style" />
     <link href="assets/css/icons.min.css" rel="stylesheet" type="text/css" />
+    <!-- <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet"> -->
+    <style>
+    #result {
+        margin-top: 20px;
+    }
+
+    #result h2,
+    #result h3 {
+        color: #333;
+    }
+
+    #similarTexts {
+        list-style-type: none;
+        padding: 0;
+    }
+
+    #similarTexts li {
+        background-color: #f9f9f9;
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+    }
+    </style>
 </head>
 
 <body data-menu-color="dark" data-sidebar="default">
@@ -34,14 +58,14 @@
                             <div class="col-md-6">
                                 <div class="card">
                                     <div class="card-body">
-                                        <h5 class="card-title mb-4">Tambah Tweet</h5>
-                                        <form id="addTweetForm">
+                                        <h5 class="card-title mb-4">Analisis Sentimen</h5>
+                                        <form id="textForm">
                                             <div class="mb-3">
                                                 <label for="tweetInput" class="form-label">Tweet</label>
-                                                <textarea class="form-control" id="tweetInput" name="tweet" rows="3"
-                                                    required></textarea>
+                                                <textarea class="form-control" id="inputText" rows="4"
+                                                    placeholder="Enter text here..." required></textarea>
                                             </div>
-                                            <button type="submit" class="btn btn-primary">Tambahkan</button>
+                                            <button type="submit" class="btn btn-primary">Submit</button>
                                         </form>
                                     </div>
                                 </div>
@@ -50,51 +74,84 @@
                                 <div class="card">
                                     <div class="card-body">
                                         <h5 class="card-title mb-4">Hasil</h5>
-                                        <div id="hasilSentimen">Hasil sentimen :</div><br>
-                                        <div id="accuracyPositif">Accuracy Positif :</div><br>
-                                        <div id="accuracyNegatif">Accuracy Negatif :</div><br>
-                                        <table id="dataRank" border="1">
-                                            <thead>
-                                                <tr>
-                                                    <th>Data Number</th>
-                                                    <th>Rank</th>
-                                                    <th>Cosine Similarity</th>
-                                                    <th>Tweet</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <!-- Data will be inserted here -->
-                                            </tbody>
-                                        </table>
+                                        <p>Preprocessing Text: <span id="textpre"></span></p>
+                                        <p>Sentiment: <span id="sentiment"></span></p>
+                                        <h3>Top 3 Similar Texts</h3>
+                                        <ul id="similarTexts"></ul>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <button id="startProcessBtn">Mulai Proses</button>
-                </div>
-            </div> <!-- container-fluid -->
-        </div> <!-- content -->
-        <!-- Footer Start -->
-        <?php include 'footer.php' ?>
-        <!-- end Footer -->
+                    <div class="mt-4">
+                        <span>Tekan button untuk memulai proses preprocessing dan tfidf data training</span>
+                        <button id="startProcessBtn" class="btn btn-success">Mulai Proses</button>
+                    </div>
+                </div> <!-- container-fluid -->
+            </div> <!-- content -->
+            <!-- Footer Start -->
+            <?php include 'footer.php' ?>
+            <!-- end Footer -->
+        </div>
     </div>
     <!-- END wrapper -->
 
     <?php include 'scripts.php' ?>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const startProcessBtn = document.getElementById('startProcessBtn');
-        const addTweetForm = document.querySelector('#addTweetForm');
-        const hasilSentimenElem = document.querySelector('#hasilSentimen');
-        const accuracyPositifElem = document.querySelector('#accuracyPositif');
-        const accuracyNegatifElem = document.querySelector('#accuracyNegatif');
-        const dataRankTableBody = document.querySelector('#dataRank tbody');
+    $(document).ready(function() {
+        $('#textForm').on('submit', function(event) {
+            event.preventDefault();
+            var inputText = $('#inputText').val();
+            if (inputText.trim() === "") {
+                alert("Please enter some text.");
+                return;
+            }
 
-        startProcessBtn.addEventListener('click', function() {
+            Swal.fire({
+                title: 'Mengirim data',
+                text: 'Mohon tunggu...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            $.ajax({
+                url: 'http://127.0.0.1:5000/knn',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    text: inputText
+                }),
+                success: function(response) {
+                    Swal.close();
+                    $('#textpre').text(response.preprocess_text);
+                    $('#sentiment').text(response.sentiment);
+                    var similarTexts = $('#similarTexts');
+                    similarTexts.empty();
+                    response.results.forEach(function(result) {
+                        similarTexts.append('<li>Rank: ' + result.rank +
+                            ' - Similarity: ' + result.similarity.toFixed(
+                                2) +
+                            ' - Text: ' + result.text + '</li>');
+                    });
+                },
+                error: function(xhr) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Terjadi kesalahan saat mengirim data.'
+                    });
+                }
+            });
+        });
+
+        $('#startProcessBtn').on('click', function() {
             Swal.fire({
                 title: 'Proses sedang berlangsung',
                 text: 'Mohon tunggu...',
@@ -123,66 +180,6 @@
                         text: 'Terjadi kesalahan saat memproses data.'
                     });
                 });
-        });
-
-        addTweetForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-
-            const tweetInput = document.querySelector('#tweetInput').value.trim();
-
-            if (tweetInput !== '') {
-                Promise.all([
-                        axios.post('http://127.0.0.1:5000/knn', {
-                            tweet: tweetInput
-                        }),
-                        axios.get('http://127.0.0.1:5000/sentimen-pelabelan'),
-                        axios.get('http://127.0.0.1:5000/similarity')
-                    ])
-                    .then(responses => {
-                        const knnResponse = responses[0].data;
-                        const sentimenPelabelanResponse = responses[1].data;
-                        const similarityResponse = responses[2].data;
-
-                        hasilSentimenElem.textContent =
-                            `Hasil sentimen: ${similarityResponse.sentiment}`;
-                        accuracyPositifElem.textContent =
-                            `Accuracy Positif: ${similarityResponse.accuracy_positif.toFixed(2)}`;
-                        accuracyNegatifElem.textContent =
-                            `Accuracy Negatif: ${similarityResponse.accuracy_negatif.toFixed(2)}`;
-
-                        dataRankTableBody.innerHTML = ''; // Clear previous results
-                        similarityResponse.results.forEach(result => {
-                            const row = document.createElement('tr');
-                            row.innerHTML = `
-                                    <td>${result.data_number}</td>
-                                    <td>${result.rank}</td>
-                                    <td>${result.cosine_similarity.toFixed(2)}</td>
-                                    <td>${result.tweet}</td>
-                                `;
-                            dataRankTableBody.appendChild(row);
-                        });
-
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Proses selesai',
-                            text: 'Proses analisis berhasil dilakukan!'
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Error processing data:', error);
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Terjadi kesalahan saat memproses data.'
-                        });
-                    });
-            } else {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Peringatan',
-                    text: 'Mohon isi tweet terlebih dahulu.'
-                });
-            }
         });
     });
     </script>

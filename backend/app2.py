@@ -9,6 +9,7 @@ import re #regex library
 from nltk.tokenize import word_tokenize 
 from nltk.probability import FreqDist
 from nltk.corpus import stopwords
+from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 # !pip3 install swifter
 # !pip3 install PySastrawi
 
@@ -16,6 +17,9 @@ import ast
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer, TfidfTransformer
 from sklearn.preprocessing import normalize
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
+
 app = Flask(__name__)
 CORS(app)
 
@@ -23,37 +27,280 @@ CORS(app)
 # API KNN
 
 # @app.route('/knn')
+# @app.route('/knn', methods=['POST'])
+# def KNN():
+#     df = pd.read_csv("hasil_vector_matrix.csv", header=None)
+
+#     X = df.iloc[1:, :-1].values
+#     y = df.iloc[1:, -2].values
+#     XNum = X.astype(np.float64)
+#     yNum = y.astype(np.float64)
+
+#     similarities = cosine_similarity(XNum, XNum)
+
+#     k = 3
+
+#     nearest_neighbors = np.zeros((len(XNum), k), dtype=int)
+
+#     for i in range(len(XNum)):
+#         nearest_indices = np.argsort(similarities[i])[-k-1:-1][::-1]
+#         nearest_neighbors[i] = yNum[nearest_indices]
+
+#     predictions = np.zeros(len(XNum), dtype=int)
+
+#     for i in range(len(XNum)):
+#         prediction = np.argmax(np.bincount(nearest_neighbors[i]))
+#         predictions[i] = prediction
+
+#     accuracy = np.mean(predictions == yNum)
+#     ranking = np.argsort(similarities, axis=1)[:, ::-1]
+
+#     return jsonify(accuracy=accuracy, ranking=ranking.tolist())
+
+# @app.route('/knn', methods=['POST'])
+# def KNN():
+#     try:
+#         # Load data
+#         df = pd.read_csv("hasil_vector_matrix.csv", header=None)
+
+#         # Assuming the first column is the text and the last column is the label
+#         texts = df.iloc[1:, 0].values
+#         labels = df.iloc[1:, -1].values
+
+#         # Convert labels to numerical values if necessary
+#         label_map = {'positif': 1, 'negatif': 0}
+#         labels = np.array([label_map[label] for label in labels])
+
+#         # Split the data into training and testing sets
+#         X_train, X_test, y_train, y_test = train_test_split(texts, labels, test_size=0.2, random_state=42)
+
+#         # Vectorize the text using TF-IDF
+#         vectorizer = TfidfVectorizer()
+#         X_train_tfidf = vectorizer.fit_transform(X_train)
+#         X_test_tfidf = vectorizer.transform(X_test)
+
+#         # Train the KNN model
+#         k = 3  # Number of neighbors
+#         knn = KNeighborsClassifier(n_neighbors=k)
+#         knn.fit(X_train_tfidf, y_train)
+
+#         # Evaluate the model
+#         y_pred = knn.predict(X_test_tfidf)
+#         accuracy = accuracy_score(y_test, y_pred)
+
+#         # Get input text from the POST request
+#         input_text = request.json.get('text')
+#         if not input_text:
+#             return jsonify({'error': 'No input text provided'}), 400
+
+#         # Vectorize the input text
+#         input_text_tfidf = vectorizer.transform([input_text])
+
+#         # Predict the sentiment of the input text
+#         prediction = knn.predict(input_text_tfidf)
+#         sentiment = 'positif' if prediction[0] == 1 else 'negatif'
+
+#         # Return the result
+#         return jsonify({'sentiment': sentiment, 'accuracy': accuracy})
+
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
+
+def preprocess_text(text):
+    # Mengubah teks menjadi huruf kecil
+    text = text.lower()
+
+    # Menghapus karakter khusus, tautan, dan non-ASCII
+    text = re.sub(r"\\t|\\n|\\u|\\", " ", text)
+    text = text.encode('ascii', 'ignore').decode('ascii')
+    text = re.sub(r"(@[A-Za-z0-9]+)|(\w+:\/\/\S+)", " ", text)
+    text = text.replace("http://", " ").replace("https://", " ")
+
+    # Menghapus angka
+    # text = re.sub(r"\d+", "", text)
+    # print("Menghapus angka berhasil")
+
+  # Mengganti koma dengan spasi
+    # text = text.replace(",", " ")
+    # print("Mengganti koma dgn spasi berhasil")
+    
+    # Menghapus tanda baca
+    # Menghapus tanda baca menggunakan maketrans dan translate
+    text = text.translate(str.maketrans("", "", string.punctuation))
+    # print("Menghapus tanda baca berhasil")
+    
+
+    # Menghapus spasi berlebih
+    text = re.sub(r'\s+', ' ', text).strip()
+
+    # Menghapus karakter tunggal
+    text = re.sub(r"\b[a-zA-Z]\b", "", text)
+
+    # Tokenisasi
+    tokens = word_tokenize(text)
+
+    # Menghapus stopwords
+    list_stopwords = set(stopwords.words('indonesian'))
+    list_stopwords.update(["yg", "dg", "rt", "dgn", "ny", "d", 'klo', 
+                           'kalo', 'amp', 'biar', 'bikin', 'bilang', 
+                           'gak', 'ga', 'krn', 'nya', 'nih', 'sih', 
+                           'si', 'tau', 'tdk', 'tuh', 'utk', 'ya', 
+                           'jd', 'jgn', 'sdh', 'aja', 'n', 't', 
+                           'nyg', 'hehe', 'pen', 'u', 'nan', 'loh', 'rt',
+                           '&amp', 'yah', 'huhu', 'eh', 'uhh', 'in'])
+
+    tokens = [word for word in tokens if word not in list_stopwords]
+
+    # Stemming
+    factory = StemmerFactory()
+    stemmer = factory.create_stemmer()
+    stemmed_tokens = [stemmer.stem(word) for word in tokens]
+
+    # Menggabungkan token kembali menjadi string
+    return ' '.join(stemmed_tokens)
+
+
 @app.route('/knn', methods=['POST'])
 def KNN():
-    df = pd.read_csv("hasil_vector_matrix.csv", header=None)
-
-    X = df.iloc[1:, :-1].values
-    y = df.iloc[1:, -2].values
-    XNum = X.astype(np.float64)
-    yNum = y.astype(np.float64)
-
-    similarities = cosine_similarity(XNum, XNum)
-
-    k = 3
-
-    nearest_neighbors = np.zeros((len(XNum), k), dtype=int)
-
-    for i in range(len(XNum)):
-        nearest_indices = np.argsort(similarities[i])[-k-1:-1][::-1]
-        nearest_neighbors[i] = yNum[nearest_indices]
-
-    predictions = np.zeros(len(XNum), dtype=int)
-
-    for i in range(len(XNum)):
-        prediction = np.argmax(np.bincount(nearest_neighbors[i]))
-        predictions[i] = prediction
-
-    accuracy = np.mean(predictions == yNum)
-    ranking = np.argsort(similarities, axis=1)[:, ::-1]
-
-    return jsonify(accuracy=accuracy, ranking=ranking.tolist())
+    try:
+        # Load vector data and labels
+        df = pd.read_csv("pelabelan.csv")
+        de = pd.read_csv("data_tweet.csv")
+        
+        # Cek ukuran DataFrame
+        # Cek ukuran DataFrame sebelum mengakses data
+        if df.shape[0] <= 1:
+            return jsonify({'error': 'DataFrame does not have enough rows for slicing.'}), 400
 
 
+
+        # Extract features and labels
+        X = df.iloc[:, :-2].values  # Features (excluding 'status' and 'label' columns)
+        y = df['label'].values  # Labels
+
+        # Convert labels to numerical values if necessary
+        label_map = {'positif': 1, 'negatif': 0}
+        y = np.array([label_map[label] for label in y])
+
+        if len(np.unique(y)) < 2:
+            return jsonify({'error': 'The dataset must contain both positive and negative labels.'}), 400
+
+        # Train the KNN model
+        k = 3  # Number of neighbors
+        knn = KNeighborsClassifier(n_neighbors=k)
+        knn.fit(X, y)
+
+        # Get input text from the POST request
+        input_text = request.json.get('text')
+        if not input_text:
+            return jsonify({'error': 'No input text provided'}), 400
+
+        # Preprocess the input text
+        preprocessed_text = preprocess_text(input_text)
+        # Load original tweets for cosine similarity
+       # Load original tweets for TF-IDF fitting
+        original_tweets = pd.read_csv("data_tweet.csv")["rawContent"]
+        original_tweets_preprocessed = [preprocess_text(tweet) for tweet in original_tweets]
+
+        # Fit TF-IDF vectorizer
+        vectorizer = TfidfVectorizer(max_features=50, lowercase=False)
+        vectorizer.fit(original_tweets_preprocessed)
+
+        # Transform original tweets and input text
+        original_tweets_tfidf = vectorizer.transform(original_tweets_preprocessed)
+        input_text_tfidf = vectorizer.transform([preprocessed_text])
+
+
+        # Normalize the input vector
+        input_text_tfidf_normalized = normalize(input_text_tfidf, norm='l1', axis=1)
+        # print(input_text_tfidf_normalized)
+        # Predict the sentiment of the input text
+        prediction = knn.predict(input_text_tfidf_normalized)
+        print(prediction)
+        sentiment = 'positif' if prediction[0] == 1 else 'negatif'
+
+        # Calculate cosine similarity
+        cosine_similarities = cosine_similarity(input_text_tfidf_normalized, original_tweets_tfidf).flatten()
+
+        # Get top 3 similar texts
+        # Get top 3 similar texts
+        top_indices = np.argsort(cosine_similarities)[-3:][::-1]
+        top_sentiments = df['label'].iloc[top_indices]
+
+        # Determine sentiment based on the majority sentiment of top 3 similar texts
+        sentiment_counts = np.bincount([label_map[sentiment] for sentiment in top_sentiments])
+        predicted_sentiment = 'positif' if sentiment_counts[1] > sentiment_counts[0] else 'negatif'
+        results = []
+        for i, idx in enumerate(top_indices):
+            rank = i + 1
+            similarity = cosine_similarities[idx]
+            tweet_text = original_tweets[idx]
+            result = {
+                "rank": rank,
+                "similarity": float(similarity),
+                "text": tweet_text
+            }
+            results.append(result)
+        print(f"TF-IDF Matrix Shape: {input_text_tfidf.shape}")
+        print(f"Predicted Sentiment: {sentiment}")
+        print(f"Cosine Similarities: {cosine_similarities}")
+        print(f"Top Indices: {top_indices}")
+        print(f"Top Sentiments: {top_sentiments}")
+
+        # Return the result
+        return jsonify({
+            'sentiment': predicted_sentiment,
+            'preprocess_text': preprocessed_text,
+            'results': results
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/metrics', methods=['POST'])
+def metrics():
+    try:
+        # Load data
+        df = pd.read_csv("pelabelan.csv")
+        de = pd.read_csv("data_tweet.csv")
+
+        # Extract features and labels
+        X = df.iloc[:, :-2].values
+        y_true = df['label'].values
+
+        # Convert labels to numerical values
+        label_map = {'positif': 1, 'negatif': 0}
+        y_true = np.array([label_map[label] for label in y_true])
+
+        if len(np.unique(y_true)) < 2:
+            return jsonify({'error': 'The dataset must contain both positive and negative labels.'}), 400
+
+        # Train the KNN model
+        k = 3
+        knn = KNeighborsClassifier(n_neighbors=k)
+        knn.fit(X, y_true)
+
+        # Predict on the same data
+        y_pred = knn.predict(X)
+
+        # Compute metrics
+        cm = confusion_matrix(y_true, y_pred)
+        accuracy = accuracy_score(y_true, y_pred)
+        precision = precision_score(y_true, y_pred, average='weighted')
+        recall = recall_score(y_true, y_pred, average='weighted')
+        f1 = f1_score(y_true, y_pred, average='weighted')
+
+        # Return metrics
+        return jsonify({
+            'confusion_matrix': cm.tolist(),
+            'accuracy': accuracy,
+            'precision': precision,
+            'recall': recall,
+            'f1_score': f1
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 # API tambah tweet to CSV
@@ -639,6 +886,8 @@ def preprocessing():
     
 #     return "tf-idf sukses"
 
+
+
 @app.route('/tf-idf')
 def tfidf():
     # Load data
@@ -664,6 +913,18 @@ def tfidf():
 
     # Save TF-IDF matrix to CSV
     tfidf_df.to_csv("hasil_vector_matrix.csv", index=False)
+    
+    data_tweet = pd.read_csv('data_tweet.csv')
+    tfidf_df['status'] = data_tweet['status']
+    tfidf_df['label'] = data_tweet['status'].apply(lambda x: 'negatif' if x in [1, 2] else 'positif')
+
+    # Simpan hasil pelabelan ke dalam file
+    tfidf_df.to_csv("pelabelan.csv", index=False)
+    # logging.debug("Saved pelabelan.csv")\
+    
+    last_row_data = tfidf_df.tail(1).to_dict(orient='records')
+    return jsonify(last_row_data)
+    
 
     return "TF-IDF berhasil dihitung dan hasil disimpan sebagai hasil_vector_matrix.csv"
 
@@ -766,469 +1027,469 @@ def pelabelan():
 
     
 #similarity
-# @app.route('/similarity', methods=['GET'])
-# def similarity():
-#     # Membaca data vektor dan sentimen dari file CSV
-#     df_vectors = pd.read_csv("pelabelan.csv", header=None, skiprows=1)
-#     vectors = df_vectors.iloc[:, 1:-3].values
-#     sentiments = df_vectors.iloc[:, -1].values
-
-#     # Membaca data tweet dari file CSV
-#     df_tweet = pd.read_csv("data_tweet.csv", encoding='latin1')
-
-#     # Mengambil data input yang akan dibandingkan dengan semua data
-#     input_vector_sentiments = vectors[-1]
-
-#     # Menghitung cosine similarity
-#     similarities_sentiments = cosine_similarity([input_vector_sentiments], vectors[:-1])[0]
-
-#     # Mengambil 3 data dengan nilai cosine similarity tertinggi
-#     top_indices_sentiments = np.argsort(similarities_sentiments)[-3:][::-1]
-
-#     # Menyimpan hasil ranking data tertinggi dan teks tweet
-#     results = []
-#     for i, idx in enumerate(top_indices_sentiments):
-#         rank = i + 1
-#         similarity = similarities_sentiments[idx]
-#         data_number = int(idx + 1)
-#         tweet_text = df_tweet.iloc[idx]['rawContent']
-#         result = {
-#             "rank": rank,
-#             "data_number": data_number,
-#             "cosine_similarity": float(similarity),
-#             "tweet": tweet_text
-#         }
-#         results.append(result)
-
-#     # Menghitung jumlah sentimen negatif dan positif dari 3 data ranking teratas
-#     top_sentiments = sentiments[top_indices_sentiments]
-#     num_negative_sentiments = np.sum(top_sentiments == 'negatif')
-#     num_positive_sentiments = np.sum(top_sentiments == 'positif')
-
-#     # Menentukan sentimen berdasarkan perbandingan jumlah sentimen positif dan negatif
-#     if num_positive_sentiments > num_negative_sentiments:
-#         sentiment_label = "positif"
-#     else:
-#         sentiment_label = "negatif"
-
-#     # Menghitung accuracy positif dan accuracy negatif
-#     accuracy_positif = 0
-#     accuracy_negatif = 0
-
-#     if num_positive_sentiments > 0:
-#         max_positive_similarity = np.max(similarities_sentiments[top_indices_sentiments[top_sentiments == 'positif'][:3]])
-#         accuracy_positif = float(max_positive_similarity) if max_positive_similarity > 0 else 0
-
-#     if num_negative_sentiments > 0:
-#         max_negative_similarity = np.max(similarities_sentiments[top_indices_sentiments[top_sentiments == 'negatif'][:3]])
-#         accuracy_negatif = float(max_negative_similarity) if max_negative_similarity > 0 else 0
-
-#     print("top sentimen = ")
-#     print(top_sentiments)
-#     print("sentimen = ")
-#     print(sentiment_label)
-#     print("akurasi positif = ")
-#     print(accuracy_positif)
-#     print("akurasi negatif = ")
-#     print(accuracy_negatif)
-#     print(similarities_sentiments)
-#     # Menyimpan hasil
-#     response = {
-#         "sentiment": sentiment_label,
-#         "accuracy_positif": accuracy_positif,
-#         "accuracy_negatif": accuracy_negatif,
-#         "results": results
-#     }
-
-#     return jsonify(response)
-
-
-# @app.route('/similarity', methods=['GET'])
-# def similarity():
-#     try:
-#         # Read vector and sentiment data from CSV files
-#         df_vectors = pd.read_csv("pelabelan.csv", header=None, skiprows=1)
-#         vectors = df_vectors.iloc[:, 1:-2].values  # Ambil vektor fitur dari kolom kedua sampai dua kolom terakhir
-#         sentiments = df_vectors.iloc[:, -1].values  # Ambil sentimen dari kolom terakhir
-
-#         # Read tweet data from CSV
-#         df_tweet = pd.read_csv("data_tweet.csv", encoding='latin1')
-
-#         # Ensure df_tweet has 'rawContent' column
-#         if 'rawContent' not in df_tweet.columns:
-#             return jsonify({'error': 'Column "rawContent" not found in data_tweet.csv'})
-
-#         # Get the input vector (last row in vectors)
-#         input_vector_sentiments = vectors[-1]
-
-#         # Normalize vectors including input vector
-#         vectors_normalized = normalize(vectors, axis=1, norm='l2')  # Normalisasi vektor fitur
-#         input_vector_normalized = normalize(input_vector_sentiments.reshape(1, -1), norm='l2')  # Normalisasi vektor input
-
-#         # Calculate cosine similarity
-#         similarities_sentiments = cosine_similarity(input_vector_normalized, vectors_normalized[:-1])[0]
-
-#         # Get top 3 data with highest cosine similarity
-#         top_indices_sentiments = np.argsort(similarities_sentiments)[-3:][::-1]
-#         results = []
-
-#         # Iterate through top indices and retrieve data
-#         for i, idx in enumerate(top_indices_sentiments):
-#             rank = i + 1
-#             similarity = similarities_sentiments[idx]
-#             data_number = int(idx + 1)
-
-#             # Safely retrieve tweet text
-#             if idx < len(df_tweet):
-#                 tweet_text = df_tweet.iloc[idx]['rawContent']
-#             else:
-#                 tweet_text = 'Not available'
-
-#             result = {
-#                 "rank": rank,
-#                 "data_number": data_number,
-#                 "cosine_similarity": float(similarity),
-#                 "tweet": tweet_text
-#             }
-#             results.append(result)
-
-#         # Calculate number of negative and positive sentiments in top 3
-#         top_sentiments = sentiments[top_indices_sentiments]
-#         num_negative_sentiments = np.sum(top_sentiments == 'negatif')
-#         num_positive_sentiments = np.sum(top_sentiments == 'positif')
-
-#         # Determine sentiment based on the number of positive and negative sentiments
-#         if num_positive_sentiments > num_negative_sentiments:
-#             sentiment_label = "positif"
-#         else:
-#             sentiment_label = "negatif"
-
-#         # Calculate accuracy positive and accuracy negative
-#         accuracy_positif = 0
-#         accuracy_negatif = 0
-
-#         if sentiment_label == "positif" and num_positive_sentiments > 0:
-#             max_positive_similarity = np.max(similarities_sentiments[top_indices_sentiments[top_sentiments == 'positif']])
-#             accuracy_positif = float(max_positive_similarity) if max_positive_similarity > 0 else 0
-#             accuracy_negatif = 0  # Set accuracy negatif to 0
-
-#         if sentiment_label == "negatif" and num_negative_sentiments > 0:
-#             max_negative_similarity = np.max(similarities_sentiments[top_indices_sentiments[top_sentiments == 'negatif']])
-#             accuracy_negatif = float(max_negative_similarity) if max_negative_similarity > 0 else 0
-#             accuracy_positif = 0  # Set accuracy positif to 0
-
-#         print("top sentimen = ")
-#         print(top_sentiments)
-#         print("sentimen = ")
-#         print(sentiment_label)
-#         print("akurasi positif = ")
-#         print(accuracy_positif)
-#         print("akurasi negatif = ")
-#         print(accuracy_negatif)
-#         print(similarities_sentiments)
-#         # Example response
-#         response = {
-#             "sentiment": sentiment_label,
-#             "accuracy_positif": accuracy_positif,
-#             "accuracy_negatif": accuracy_negatif,
-#             "results": results
-#         }
-
-#         return jsonify(response)
-
-#     except Exception as e:
-#         return jsonify({'error': str(e)}), 500
-
-# @app.route('/similarity', methods=['GET'])
-# def similarity():
-#     try:
-#         # Read vector and sentiment data from CSV files
-#         df_vectors = pd.read_csv("pelabelan.csv", header=None, skiprows=1)
-#         vectors = df_vectors.iloc[:, 1:-2].values  # Ambil vektor fitur dari kolom kedua sampai dua kolom terakhir
-#         sentiments = df_vectors.iloc[:, -1].values  # Ambil sentimen dari kolom terakhir
-
-#         # Read tweet data from CSV
-#         df_tweet = pd.read_csv("data_tweet.csv", encoding='latin1')
-
-#         # Ensure df_tweet has 'rawContent' column
-#         if 'rawContent' not in df_tweet.columns:
-#             return jsonify({'error': 'Column "rawContent" not found in data_tweet.csv'})
-
-#         # Get the input vector (last row in vectors)
-#         input_vector_sentiments = vectors[-1]
-
-#         # Normalize vectors including input vector
-#         vectors_normalized = normalize(vectors, axis=1, norm='l2')  # Normalisasi vektor fitur
-#         input_vector_normalized = normalize(input_vector_sentiments.reshape(1, -1), norm='l2')  # Normalisasi vektor input
-
-#         # Calculate cosine similarity
-#         similarities_sentiments = cosine_similarity(input_vector_normalized, vectors_normalized[:-1])[0]
-
-#         # Get top 3 data with highest cosine similarity
-#         top_indices_sentiments = np.argsort(similarities_sentiments)[-3:][::-1]
-#         results = []
-
-#         # Iterate through top indices and retrieve data
-#         for i, idx in enumerate(top_indices_sentiments):
-#             rank = i + 1
-#             similarity = similarities_sentiments[idx]
-#             data_number = int(idx + 1)
-
-#             # Safely retrieve tweet text
-#             if idx < len(df_tweet):
-#                 tweet_text = df_tweet.iloc[idx]['rawContent']
-#             else:
-#                 tweet_text = 'Not available'
-
-#             result = {
-#                 "rank": rank,
-#                 "data_number": data_number,
-#                 "cosine_similarity": float(similarity),
-#                 "tweet": tweet_text
-#             }
-#             results.append(result)
-
-#         # Calculate number of negative and positive sentiments in top 3
-#         top_sentiments = sentiments[top_indices_sentiments]
-#         num_negative_sentiments = np.sum(top_sentiments == 'negatif')
-#         num_positive_sentiments = np.sum(top_sentiments == 'positif')
-
-#         # Determine sentiment based on the number of positive and negative sentiments
-#         if num_positive_sentiments > num_negative_sentiments:
-#             sentiment_label = "positif"
-#         else:
-#             sentiment_label = "negatif"
-
-#         # Calculate accuracy positive and accuracy negative
-#         accuracy_positif = 0
-#         accuracy_negatif = 0
-
-#         if sentiment_label == "positif" and num_positive_sentiments > 0:
-#             max_positive_similarity = np.max(similarities_sentiments[top_indices_sentiments[top_sentiments == 'positif']])
-#             accuracy_positif = float(max_positive_similarity) if max_positive_similarity > 0 else 0
-#             accuracy_negatif = 0  # Set accuracy negatif to 0
-
-#         if sentiment_label == "negatif" and num_negative_sentiments > 0:
-#             max_negative_similarity = np.max(similarities_sentiments[top_indices_sentiments[top_sentiments == 'negatif']])
-#             accuracy_negatif = float(max_negative_similarity) if max_negative_similarity > 0 else 0
-#             accuracy_positif = 0  # Set accuracy positif to 0
-
-#         print("top sentimen = ")
-#         print(top_sentiments)
-#         print("sentimen = ")
-#         print(sentiment_label)
-#         print("akurasi positif = ")
-#         print(accuracy_positif)
-#         print("akurasi negatif = ")
-#         print(accuracy_negatif)
-#         print(similarities_sentiments)
-#         # Example response
-#         response = {
-#             "sentiment": sentiment_label,
-#             "accuracy_positif": accuracy_positif,
-#             "accuracy_negatif": accuracy_negatif,
-#             "results": results
-#         }
-
-#         return jsonify(response)
-
-#     except Exception as e:
-#         return jsonify({'error': str(e)}), 500
-
-# @app.route('/similarity', methods=['GET'])
-# def similarity():
-#     try:
-#         # Read vector and sentiment data from CSV files
-#         df_vectors = pd.read_csv("pelabelan.csv", header=None, skiprows=1)
-#         vectors = df_vectors.iloc[:, 1:-2].values  # Ambil vektor fitur dari kolom kedua sampai dua kolom terakhir
-#         sentiments = df_vectors.iloc[:, -1].values  # Ambil sentimen dari kolom terakhir
-
-#         # Read tweet data from CSV
-#         df_tweet = pd.read_csv("data_tweet.csv", encoding='latin1')
-
-#         # Ensure df_tweet has 'rawContent' column
-#         if 'rawContent' not in df_tweet.columns:
-#             return jsonify({'error': 'Column "rawContent" not found in data_tweet.csv'})
-
-#         # Get the input vector (last row in vectors)
-#         input_vector_sentiments = vectors[-1]
-
-#         # Normalize vectors including input vector
-#         vectors_normalized = normalize(vectors, axis=1, norm='l2')  # Normalisasi vektor fitur
-#         input_vector_normalized = normalize(input_vector_sentiments.reshape(1, -1), norm='l2')  # Normalisasi vektor input
-
-#         # Calculate cosine similarity
-#         similarities_sentiments = cosine_similarity(input_vector_normalized, vectors_normalized[:-1])[0]
-
-#         # Get top 3 data with highest cosine similarity
-#         top_indices_sentiments = np.argsort(similarities_sentiments)[-3:][::-1]
-#         results = []
-
-#         # Iterate through top indices and retrieve data
-#         for i, idx in enumerate(top_indices_sentiments):
-#             rank = i + 1
-#             similarity = similarities_sentiments[idx]
-#             data_number = int(idx + 1)
-
-#             # Safely retrieve tweet text
-#             if idx < len(df_tweet):
-#                 tweet_text = df_tweet.iloc[idx]['rawContent']
-#             else:
-#                 tweet_text = 'Not available'
-
-#             result = {
-#                 "rank": rank,
-#                 "data_number": data_number,
-#                 "cosine_similarity": float(similarity),
-#                 "tweet": tweet_text
-#             }
-#             results.append(result)
-
-#         # Calculate number of negative and positive sentiments in top 3
-#         top_sentiments = sentiments[top_indices_sentiments]
-#         num_negative_sentiments = np.sum(top_sentiments == 'negatif')
-#         num_positive_sentiments = np.sum(top_sentiments == 'positif')
-
-#         # Determine sentiment based on the number of positive and negative sentiments
-#         if num_positive_sentiments > num_negative_sentiments:
-#             sentiment_label = "positif"
-#         else:
-#             sentiment_label = "negatif"
-
-#         # Calculate accuracy positive and accuracy negative
-#         accuracy_positif = 0
-#         accuracy_negatif = 0
-
-#         if sentiment_label == "positif" and num_positive_sentiments > 0:
-#             max_positive_similarity = np.max(similarities_sentiments[top_indices_sentiments[top_sentiments == 'positif']])
-#             accuracy_positif = float(max_positive_similarity) if max_positive_similarity > 0 else 0
-#             accuracy_negatif = 0  # Set accuracy negatif to 0
-
-#         if sentiment_label == "negatif" and num_negative_sentiments > 0:
-#             max_negative_similarity = np.max(similarities_sentiments[top_indices_sentiments[top_sentiments == 'negatif']])
-#             accuracy_negatif = float(max_negative_similarity) if max_negative_similarity > 0 else 0
-#             accuracy_positif = 0  # Set accuracy positif to 0
-
-#         # Example response
-#         response = {
-#             "sentiment": sentiment_label,
-#             "accuracy_positif": accuracy_positif,
-#             "accuracy_negatif": accuracy_negatif,
-#             "results": results
-#         }
-
-#         return jsonify(response)
-
-#     except Exception as e:
-#         return jsonify({'error': str(e)}), 500
-
 @app.route('/similarity', methods=['GET'])
 def similarity():
-    try:
-        # Read vector and sentiment data from CSV files
-        df_vectors = pd.read_csv("pelabelan.csv", header=None, skiprows=1)
-        vectors = df_vectors.iloc[:, 1:-2].values  # Ambil vektor fitur dari kolom kedua sampai dua kolom terakhir
-        sentiments = df_vectors.iloc[:, -1].values  # Ambil sentimen dari kolom terakhir
+    # Membaca data vektor dan sentimen dari file CSV
+    df_vectors = pd.read_csv("pelabelan.csv", header=None, skiprows=1)
+    vectors = df_vectors.iloc[:, 1:-3].values
+    sentiments = df_vectors.iloc[:, -1].values
 
-        # Debug: Print first few vectors and sentiments
-        print("Vectors:", vectors[:5])
-        print("Sentiments:", sentiments[:5])
+    # Membaca data tweet dari file CSV
+    df_tweet = pd.read_csv("data_tweet.csv", encoding='latin1')
 
-        # Read tweet data from CSV
-        df_tweet = pd.read_csv("data_tweet.csv", encoding='latin1')
+    # Mengambil data input yang akan dibandingkan dengan semua data
+    input_vector_sentiments = vectors[-1]
 
-        # Ensure df_tweet has 'rawContent' column
-        if 'rawContent' not in df_tweet.columns:
-            return jsonify({'error': 'Column "rawContent" not found in data_tweet.csv'})
+    # Menghitung cosine similarity
+    similarities_sentiments = cosine_similarity([input_vector_sentiments], vectors[:-1])[0]
 
-        # Get the input vector (last row in vectors)
-        input_vector_sentiments = vectors[-1]
+    # Mengambil 3 data dengan nilai cosine similarity tertinggi
+    top_indices_sentiments = np.argsort(similarities_sentiments)[-3:][::-1]
 
-        # Normalize vectors including input vector
-        vectors_normalized = normalize(vectors, axis=1, norm='l2')  # Normalisasi vektor fitur
-        input_vector_normalized = normalize(input_vector_sentiments.reshape(1, -1), norm='l2')  # Normalisasi vektor input
-
-        # Debug: Print normalized vectors
-        print("Normalized Vectors:", vectors_normalized[:5])
-        print("Normalized Input Vector:", input_vector_normalized)
-
-        # Calculate cosine similarity
-        similarities_sentiments = cosine_similarity(input_vector_normalized, vectors_normalized[:-1])[0]
-
-        # Debug: Print cosine similarities
-        print("Cosine Similarities:", similarities_sentiments)
-
-        # Get top 3 data with highest cosine similarity
-        top_indices_sentiments = np.argsort(similarities_sentiments)[-3:][::-1]
-        results = []
-
-        # Iterate through top indices and retrieve data
-        for i, idx in enumerate(top_indices_sentiments):
-            rank = i + 1
-            similarity = similarities_sentiments[idx]
-            data_number = int(idx + 1)
-
-            # Safely retrieve tweet text
-            if idx < len(df_tweet):
-                tweet_text = df_tweet.iloc[idx]['rawContent']
-            else:
-                tweet_text = 'Not available'
-
-            result = {
-                "rank": rank,
-                "data_number": data_number,
-                "cosine_similarity": float(similarity),
-                "tweet": tweet_text
-            }
-            results.append(result)
-
-        # Calculate number of negative and positive sentiments in top 3
-        top_sentiments = sentiments[top_indices_sentiments]
-        num_negative_sentiments = np.sum(top_sentiments == 'negatif')
-        num_positive_sentiments = np.sum(top_sentiments == 'positif')
-
-        # Debug: Print top sentiments
-        print("Top Sentiments:", top_sentiments)
-        print("Num Negative Sentiments:", num_negative_sentiments)
-        print("Num Positive Sentiments:", num_positive_sentiments)
-
-        # Determine sentiment based on the number of positive and negative sentiments
-        if num_positive_sentiments > num_negative_sentiments:
-            sentiment_label = "positif"
-        else:
-            sentiment_label = "negatif"
-
-        # Calculate accuracy positive and accuracy negative
-        accuracy_positif = 0
-        accuracy_negatif = 0
-
-        if sentiment_label == "positif" and num_positive_sentiments > 0:
-            max_positive_similarity = np.max(similarities_sentiments[top_indices_sentiments[top_sentiments == 'positif']])
-            accuracy_positif = float(max_positive_similarity) if max_positive_similarity > 0 else 0
-            accuracy_negatif = 0  # Set accuracy negatif to 0
-
-        if sentiment_label == "negatif" and num_negative_sentiments > 0:
-            max_negative_similarity = np.max(similarities_sentiments[top_indices_sentiments[top_sentiments == 'negatif']])
-            accuracy_negatif = float(max_negative_similarity) if max_negative_similarity > 0 else 0
-            accuracy_positif = 0  # Set accuracy positif to 0
-
-        # Debug: Print final sentiment and accuracies
-        print("Final Sentiment:", sentiment_label)
-        print("Accuracy Positif:", accuracy_positif)
-        print("Accuracy Negatif:", accuracy_negatif)
-
-        # Example response
-        response = {
-            "sentiment": sentiment_label,
-            "accuracy_positif": accuracy_positif,
-            "accuracy_negatif": accuracy_negatif,
-            "results": results
+    # Menyimpan hasil ranking data tertinggi dan teks tweet
+    results = []
+    for i, idx in enumerate(top_indices_sentiments):
+        rank = i + 1
+        similarity = similarities_sentiments[idx]
+        data_number = int(idx + 1)
+        tweet_text = df_tweet.iloc[idx]['rawContent']
+        result = {
+            "rank": rank,
+            "data_number": data_number,
+            "cosine_similarity": float(similarity),
+            "tweet": tweet_text
         }
+        results.append(result)
 
-        return jsonify(response)
+    # Menghitung jumlah sentimen negatif dan positif dari 3 data ranking teratas
+    top_sentiments = sentiments[top_indices_sentiments]
+    num_negative_sentiments = np.sum(top_sentiments == 'negatif')
+    num_positive_sentiments = np.sum(top_sentiments == 'positif')
 
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    # Menentukan sentimen berdasarkan perbandingan jumlah sentimen positif dan negatif
+    if num_positive_sentiments > num_negative_sentiments:
+        sentiment_label = "positif"
+    else:
+        sentiment_label = "negatif"
+
+    # Menghitung accuracy positif dan accuracy negatif
+    accuracy_positif = 0
+    accuracy_negatif = 0
+
+    if num_positive_sentiments > 0:
+        max_positive_similarity = np.max(similarities_sentiments[top_indices_sentiments[top_sentiments == 'positif'][:3]])
+        accuracy_positif = float(max_positive_similarity) if max_positive_similarity > 0 else 0
+
+    if num_negative_sentiments > 0:
+        max_negative_similarity = np.max(similarities_sentiments[top_indices_sentiments[top_sentiments == 'negatif'][:3]])
+        accuracy_negatif = float(max_negative_similarity) if max_negative_similarity > 0 else 0
+
+    print("top sentimen = ")
+    print(top_sentiments)
+    print("sentimen = ")
+    print(sentiment_label)
+    print("akurasi positif = ")
+    print(accuracy_positif)
+    print("akurasi negatif = ")
+    print(accuracy_negatif)
+    # print(similarities_sentiments)z
+    # Menyimpan hasil
+    response = {
+        "sentiment": sentiment_label,
+        "accuracy_positif": accuracy_positif,
+        "accuracy_negatif": accuracy_negatif,
+        "results": results
+    }
+
+    return jsonify(response)
+
+
+# @app.route('/similarity', methods=['GET'])
+# def similarity():
+#     try:
+#         # Read vector and sentiment data from CSV files
+#         df_vectors = pd.read_csv("pelabelan.csv", header=None, skiprows=1)
+#         vectors = df_vectors.iloc[:, 1:-2].values  # Ambil vektor fitur dari kolom kedua sampai dua kolom terakhir
+#         sentiments = df_vectors.iloc[:, -1].values  # Ambil sentimen dari kolom terakhir
+
+#         # Read tweet data from CSV
+#         df_tweet = pd.read_csv("data_tweet.csv", encoding='latin1')
+
+#         # Ensure df_tweet has 'rawContent' column
+#         if 'rawContent' not in df_tweet.columns:
+#             return jsonify({'error': 'Column "rawContent" not found in data_tweet.csv'})
+
+#         # Get the input vector (last row in vectors)
+#         input_vector_sentiments = vectors[-1]
+
+#         # Normalize vectors including input vector
+#         vectors_normalized = normalize(vectors, axis=1, norm='l2')  # Normalisasi vektor fitur
+#         input_vector_normalized = normalize(input_vector_sentiments.reshape(1, -1), norm='l2')  # Normalisasi vektor input
+
+#         # Calculate cosine similarity
+#         similarities_sentiments = cosine_similarity(input_vector_normalized, vectors_normalized[:-1])[0]
+
+#         # Get top 3 data with highest cosine similarity
+#         top_indices_sentiments = np.argsort(similarities_sentiments)[-3:][::-1]
+#         results = []
+
+#         # Iterate through top indices and retrieve data
+#         for i, idx in enumerate(top_indices_sentiments):
+#             rank = i + 1
+#             similarity = similarities_sentiments[idx]
+#             data_number = int(idx + 1)
+
+#             # Safely retrieve tweet text
+#             if idx < len(df_tweet):
+#                 tweet_text = df_tweet.iloc[idx]['rawContent']
+#             else:
+#                 tweet_text = 'Not available'
+
+#             result = {
+#                 "rank": rank,
+#                 "data_number": data_number,
+#                 "cosine_similarity": float(similarity),
+#                 "tweet": tweet_text
+#             }
+#             results.append(result)
+
+#         # Calculate number of negative and positive sentiments in top 3
+#         top_sentiments = sentiments[top_indices_sentiments]
+#         num_negative_sentiments = np.sum(top_sentiments == 'negatif')
+#         num_positive_sentiments = np.sum(top_sentiments == 'positif')
+
+#         # Determine sentiment based on the number of positive and negative sentiments
+#         if num_positive_sentiments > num_negative_sentiments:
+#             sentiment_label = "positif"
+#         else:
+#             sentiment_label = "negatif"
+
+#         # Calculate accuracy positive and accuracy negative
+#         accuracy_positif = 0
+#         accuracy_negatif = 0
+
+#         if sentiment_label == "positif" and num_positive_sentiments > 0:
+#             max_positive_similarity = np.max(similarities_sentiments[top_indices_sentiments[top_sentiments == 'positif']])
+#             accuracy_positif = float(max_positive_similarity) if max_positive_similarity > 0 else 0
+#             accuracy_negatif = 0  # Set accuracy negatif to 0
+
+#         if sentiment_label == "negatif" and num_negative_sentiments > 0:
+#             max_negative_similarity = np.max(similarities_sentiments[top_indices_sentiments[top_sentiments == 'negatif']])
+#             accuracy_negatif = float(max_negative_similarity) if max_negative_similarity > 0 else 0
+#             accuracy_positif = 0  # Set accuracy positif to 0
+
+#         print("top sentimen = ")
+#         print(top_sentiments)
+#         print("sentimen = ")
+#         print(sentiment_label)
+#         print("akurasi positif = ")
+#         print(accuracy_positif)
+#         print("akurasi negatif = ")
+#         print(accuracy_negatif)
+#         print(similarities_sentiments)
+#         # Example response
+#         response = {
+#             "sentiment": sentiment_label,
+#             "accuracy_positif": accuracy_positif,
+#             "accuracy_negatif": accuracy_negatif,
+#             "results": results
+#         }
+
+#         return jsonify(response)
+
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
+
+# @app.route('/similarity', methods=['GET'])
+# def similarity():
+#     try:
+#         # Read vector and sentiment data from CSV files
+#         df_vectors = pd.read_csv("pelabelan.csv", header=None, skiprows=1)
+#         vectors = df_vectors.iloc[:, 1:-2].values  # Ambil vektor fitur dari kolom kedua sampai dua kolom terakhir
+#         sentiments = df_vectors.iloc[:, -1].values  # Ambil sentimen dari kolom terakhir
+
+#         # Read tweet data from CSV
+#         df_tweet = pd.read_csv("data_tweet.csv", encoding='latin1')
+
+#         # Ensure df_tweet has 'rawContent' column
+#         if 'rawContent' not in df_tweet.columns:
+#             return jsonify({'error': 'Column "rawContent" not found in data_tweet.csv'})
+
+#         # Get the input vector (last row in vectors)
+#         input_vector_sentiments = vectors[-1]
+
+#         # Normalize vectors including input vector
+#         vectors_normalized = normalize(vectors, axis=1, norm='l2')  # Normalisasi vektor fitur
+#         input_vector_normalized = normalize(input_vector_sentiments.reshape(1, -1), norm='l2')  # Normalisasi vektor input
+
+#         # Calculate cosine similarity
+#         similarities_sentiments = cosine_similarity(input_vector_normalized, vectors_normalized[:-1])[0]
+
+#         # Get top 3 data with highest cosine similarity
+#         top_indices_sentiments = np.argsort(similarities_sentiments)[-3:][::-1]
+#         results = []
+
+#         # Iterate through top indices and retrieve data
+#         for i, idx in enumerate(top_indices_sentiments):
+#             rank = i + 1
+#             similarity = similarities_sentiments[idx]
+#             data_number = int(idx + 1)
+
+#             # Safely retrieve tweet text
+#             if idx < len(df_tweet):
+#                 tweet_text = df_tweet.iloc[idx]['rawContent']
+#             else:
+#                 tweet_text = 'Not available'
+
+#             result = {
+#                 "rank": rank,
+#                 "data_number": data_number,
+#                 "cosine_similarity": float(similarity),
+#                 "tweet": tweet_text
+#             }
+#             results.append(result)
+
+#         # Calculate number of negative and positive sentiments in top 3
+#         top_sentiments = sentiments[top_indices_sentiments]
+#         num_negative_sentiments = np.sum(top_sentiments == 'negatif')
+#         num_positive_sentiments = np.sum(top_sentiments == 'positif')
+
+#         # Determine sentiment based on the number of positive and negative sentiments
+#         if num_positive_sentiments > num_negative_sentiments:
+#             sentiment_label = "positif"
+#         else:
+#             sentiment_label = "negatif"
+
+#         # Calculate accuracy positive and accuracy negative
+#         accuracy_positif = 0
+#         accuracy_negatif = 0
+
+#         if sentiment_label == "positif" and num_positive_sentiments > 0:
+#             max_positive_similarity = np.max(similarities_sentiments[top_indices_sentiments[top_sentiments == 'positif']])
+#             accuracy_positif = float(max_positive_similarity) if max_positive_similarity > 0 else 0
+#             accuracy_negatif = 0  # Set accuracy negatif to 0
+
+#         if sentiment_label == "negatif" and num_negative_sentiments > 0:
+#             max_negative_similarity = np.max(similarities_sentiments[top_indices_sentiments[top_sentiments == 'negatif']])
+#             accuracy_negatif = float(max_negative_similarity) if max_negative_similarity > 0 else 0
+#             accuracy_positif = 0  # Set accuracy positif to 0
+
+#         print("top sentimen = ")
+#         print(top_sentiments)
+#         print("sentimen = ")
+#         print(sentiment_label)
+#         print("akurasi positif = ")
+#         print(accuracy_positif)
+#         print("akurasi negatif = ")
+#         print(accuracy_negatif)
+#         print(similarities_sentiments)
+#         # Example response
+#         response = {
+#             "sentiment": sentiment_label,
+#             "accuracy_positif": accuracy_positif,
+#             "accuracy_negatif": accuracy_negatif,
+#             "results": results
+#         }
+
+#         return jsonify(response)
+
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
+
+# @app.route('/similarity', methods=['GET'])
+# def similarity():
+#     try:
+#         # Read vector and sentiment data from CSV files
+#         df_vectors = pd.read_csv("pelabelan.csv", header=None, skiprows=1)
+#         vectors = df_vectors.iloc[:, 1:-2].values  # Ambil vektor fitur dari kolom kedua sampai dua kolom terakhir
+#         sentiments = df_vectors.iloc[:, -1].values  # Ambil sentimen dari kolom terakhir
+
+#         # Read tweet data from CSV
+#         df_tweet = pd.read_csv("data_tweet.csv", encoding='latin1')
+
+#         # Ensure df_tweet has 'rawContent' column
+#         if 'rawContent' not in df_tweet.columns:
+#             return jsonify({'error': 'Column "rawContent" not found in data_tweet.csv'})
+
+#         # Get the input vector (last row in vectors)
+#         input_vector_sentiments = vectors[-1]
+
+#         # Normalize vectors including input vector
+#         vectors_normalized = normalize(vectors, axis=1, norm='l2')  # Normalisasi vektor fitur
+#         input_vector_normalized = normalize(input_vector_sentiments.reshape(1, -1), norm='l2')  # Normalisasi vektor input
+
+#         # Calculate cosine similarity
+#         similarities_sentiments = cosine_similarity(input_vector_normalized, vectors_normalized[:-1])[0]
+
+#         # Get top 3 data with highest cosine similarity
+#         top_indices_sentiments = np.argsort(similarities_sentiments)[-3:][::-1]
+#         results = []
+
+#         # Iterate through top indices and retrieve data
+#         for i, idx in enumerate(top_indices_sentiments):
+#             rank = i + 1
+#             similarity = similarities_sentiments[idx]
+#             data_number = int(idx + 1)
+
+#             # Safely retrieve tweet text
+#             if idx < len(df_tweet):
+#                 tweet_text = df_tweet.iloc[idx]['rawContent']
+#             else:
+#                 tweet_text = 'Not available'
+
+#             result = {
+#                 "rank": rank,
+#                 "data_number": data_number,
+#                 "cosine_similarity": float(similarity),
+#                 "tweet": tweet_text
+#             }
+#             results.append(result)
+
+#         # Calculate number of negative and positive sentiments in top 3
+#         top_sentiments = sentiments[top_indices_sentiments]
+#         num_negative_sentiments = np.sum(top_sentiments == 'negatif')
+#         num_positive_sentiments = np.sum(top_sentiments == 'positif')
+
+#         # Determine sentiment based on the number of positive and negative sentiments
+#         if num_positive_sentiments > num_negative_sentiments:
+#             sentiment_label = "positif"
+#         else:
+#             sentiment_label = "negatif"
+
+#         # Calculate accuracy positive and accuracy negative
+#         accuracy_positif = 0
+#         accuracy_negatif = 0
+
+#         if sentiment_label == "positif" and num_positive_sentiments > 0:
+#             max_positive_similarity = np.max(similarities_sentiments[top_indices_sentiments[top_sentiments == 'positif']])
+#             accuracy_positif = float(max_positive_similarity) if max_positive_similarity > 0 else 0
+#             accuracy_negatif = 0  # Set accuracy negatif to 0
+
+#         if sentiment_label == "negatif" and num_negative_sentiments > 0:
+#             max_negative_similarity = np.max(similarities_sentiments[top_indices_sentiments[top_sentiments == 'negatif']])
+#             accuracy_negatif = float(max_negative_similarity) if max_negative_similarity > 0 else 0
+#             accuracy_positif = 0  # Set accuracy positif to 0
+
+#         # Example response
+#         response = {
+#             "sentiment": sentiment_label,
+#             "accuracy_positif": accuracy_positif,
+#             "accuracy_negatif": accuracy_negatif,
+#             "results": results
+#         }
+
+#         return jsonify(response)
+
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
+
+# @app.route('/similarity', methods=['GET'])
+# def similarity():
+#     try:
+#         # Read vector and sentiment data from CSV files
+#         df_vectors = pd.read_csv("pelabelan.csv", header=None, skiprows=1)
+#         vectors = df_vectors.iloc[:, 1:-2].values  # Ambil vektor fitur dari kolom kedua sampai dua kolom terakhir
+#         sentiments = df_vectors.iloc[:, -1].values  # Ambil sentimen dari kolom terakhir
+
+#         # Debug: Print first few vectors and sentiments
+#         print("Vectors:", vectors[:5])
+#         print("Sentiments:", sentiments[:5])
+
+#         # Read tweet data from CSV
+#         df_tweet = pd.read_csv("data_tweet.csv", encoding='latin1')
+
+#         # Ensure df_tweet has 'rawContent' column
+#         if 'rawContent' not in df_tweet.columns:
+#             return jsonify({'error': 'Column "rawContent" not found in data_tweet.csv'})
+
+#         # Get the input vector (last row in vectors)
+#         input_vector_sentiments = vectors[-1]
+
+#         # Normalize vectors including input vector
+#         vectors_normalized = normalize(vectors, axis=1, norm='l2')  # Normalisasi vektor fitur
+#         input_vector_normalized = normalize(input_vector_sentiments.reshape(1, -1), norm='l2')  # Normalisasi vektor input
+
+#         # Debug: Print normalized vectors
+#         # print("Normalized Vectors:", vectors_normalized[:5])
+#         print("Normalized Input Vector:", input_vector_normalized)
+
+#         # Calculate cosine similarity
+#         similarities_sentiments = cosine_similarity(input_vector_normalized, vectors_normalized[:-1])[0]
+
+#         # Debug: Print cosine similarities
+#         print("Cosine Similarities:", similarities_sentiments)
+
+#         # Get top 3 data with highest cosine similarity
+#         top_indices_sentiments = np.argsort(similarities_sentiments)[-3:][::-1]
+#         results = []
+
+#         # Iterate through top indices and retrieve data
+#         for i, idx in enumerate(top_indices_sentiments):
+#             rank = i + 1
+#             similarity = similarities_sentiments[idx]
+#             data_number = int(idx + 1)
+
+#             # Safely retrieve tweet text
+#             if idx < len(df_tweet):
+#                 tweet_text = df_tweet.iloc[idx]['rawContent']
+#             else:
+#                 tweet_text = 'Not available'
+
+#             result = {
+#                 "rank": rank,
+#                 "data_number": data_number,
+#                 "cosine_similarity": float(similarity),
+#                 "tweet": tweet_text
+#             }
+#             results.append(result)
+
+#         # Calculate number of negative and positive sentiments in top 3
+#         top_sentiments = sentiments[top_indices_sentiments]
+#         num_negative_sentiments = np.sum(top_sentiments == 'negatif')
+#         num_positive_sentiments = np.sum(top_sentiments == 'positif')
+
+#         # Debug: Print top sentiments
+#         print("Top Sentiments:", top_sentiments)
+#         print("Num Negative Sentiments:", num_negative_sentiments)
+#         print("Num Positive Sentiments:", num_positive_sentiments)
+
+#         # Determine sentiment based on the number of positive and negative sentiments
+#         if num_positive_sentiments > num_negative_sentiments:
+#             sentiment_label = "positif"
+#         else:
+#             sentiment_label = "negatif"
+
+#         # Calculate accuracy positive and accuracy negative
+#         accuracy_positif = 0
+#         accuracy_negatif = 0
+
+#         if sentiment_label == "positif" and num_positive_sentiments > 0:
+#             max_positive_similarity = np.max(similarities_sentiments[top_indices_sentiments[top_sentiments == 'positif']])
+#             accuracy_positif = float(max_positive_similarity) if max_positive_similarity > 0 else 0
+#             accuracy_negatif = 0  # Set accuracy negatif to 0
+
+#         if sentiment_label == "negatif" and num_negative_sentiments > 0:
+#             max_negative_similarity = np.max(similarities_sentiments[top_indices_sentiments[top_sentiments == 'negatif']])
+#             accuracy_negatif = float(max_negative_similarity) if max_negative_similarity > 0 else 0
+#             accuracy_positif = 0  # Set accuracy positif to 0
+
+#         # Debug: Print final sentiment and accuracies
+#         print("Final Sentiment:", sentiment_label)
+#         print("Accuracy Positif:", accuracy_positif)
+#         print("Accuracy Negatif:", accuracy_negatif)
+
+#         # Example response
+#         response = {
+#             "sentiment": sentiment_label,
+#             "accuracy_positif": accuracy_positif,
+#             "accuracy_negatif": accuracy_negatif,
+#             "results": results
+#         }
+
+#         return jsonify(response)
+
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
 
     
 # approve status
