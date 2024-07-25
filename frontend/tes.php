@@ -18,7 +18,7 @@
         <div id="result">
             <h2>Result</h2>
             <p>Preprocessing Text: <span id="textpre"></span></p>
-            <p>Sentiment: <span id="sentiment"></span></p>
+            <p>Sentiment: <strong> <span id="sentiment"></span></strong></p>
             <h3>Top 3 Similar Texts</h3>
             <ul id="similarTexts"></ul>
         </div>
