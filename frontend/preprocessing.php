@@ -42,6 +42,10 @@
                     <div class="py-3 d-flex align-items-sm-center flex-sm-row flex-column">
                         <div class="flex-grow-1">
                             <h4 class="fs-18 fw-semibold m-0">Data Training</h4>
+                            <div class="mt-4">
+                                <span>Tekan button untuk memulai proses preprocessing dan tfidf data training</span>
+                                <button id="startProcessBtn" class="btn btn-success">Mulai Proses</button>
+                            </div>
                         </div>
                     </div>
                     <div class="row">
@@ -118,9 +122,45 @@ if (!file_exists($file_path)) {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
     $(document).ready(function() {
         $('#dataTable').DataTable();
+    });
+    </script>
+    <script>
+    $(document).ready(function() {
+
+        $('#startProcessBtn').on('click', function() {
+            Swal.fire({
+                title: 'Proses sedang berlangsung',
+                text: 'Mohon tunggu...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            axios.get('http://127.0.0.1:5000/preprocessing')
+                .then(response => {
+                    return axios.get('http://127.0.0.1:5000/tf-idf');
+                })
+                .then(response => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Proses selesai',
+                        text: 'Proses preprocessing dan tf-idf berhasil dilakukan!'
+                    });
+                })
+                .catch(error => {
+                    console.error('Error processing data:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Terjadi kesalahan saat memproses data.'
+                    });
+                });
+        });
     });
     </script>
 </body>

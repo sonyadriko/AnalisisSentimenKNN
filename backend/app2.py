@@ -117,11 +117,11 @@ def preprocess_text(text):
     text = text.replace("http://", " ").replace("https://", " ")
 
     # Menghapus angka
-    # text = re.sub(r"\d+", "", text)
+    text = re.sub(r"\d+", "", text)
     # print("Menghapus angka berhasil")
 
   # Mengganti koma dengan spasi
-    # text = text.replace(",", " ")
+    text = text.replace(",", " ")
     # print("Mengganti koma dgn spasi berhasil")
     
     # Menghapus tanda baca
@@ -163,73 +163,95 @@ def preprocess_text(text):
 @app.route('/knn', methods=['POST'])
 def KNN():
     try:
+        print("=== Mulai Proses KNN ===")
+
         # Load vector data and labels
         df = pd.read_csv("pelabelan.csv")
         de = pd.read_csv("data_tweet.csv")
-        
+        print("Data pelabelan dan data tweet berhasil dimuat.")
+
         # Cek ukuran DataFrame
-        # Cek ukuran DataFrame sebelum mengakses data
         if df.shape[0] <= 1:
+            print("Error: DataFrame tidak memiliki cukup data.")
             return jsonify({'error': 'DataFrame does not have enough rows for slicing.'}), 400
-
-
 
         # Extract features and labels
         X = df.iloc[:, :-2].values  # Features (excluding 'status' and 'label' columns)
         y = df['label'].values  # Labels
+        print(f"Shape X: {X.shape}, Shape y: {y.shape}")
 
         # Convert labels to numerical values if necessary
         label_map = {'positif': 1, 'negatif': 0}
         y = np.array([label_map[label] for label in y])
+        print(f"Label mapping berhasil: {np.unique(y)}")
 
         if len(np.unique(y)) < 2:
+            print("Error: Dataset harus mengandung label positif dan negatif.")
             return jsonify({'error': 'The dataset must contain both positive and negative labels.'}), 400
 
-        # Train the KNN model
-        k = 3  # Number of neighbors
-        knn = KNeighborsClassifier(n_neighbors=k)
-        knn.fit(X, y)
-
-        # Get input text from the POST request
+        # Get input text and k from the POST request
         input_text = request.json.get('text')
+        k = request.json.get('k', 3)  # Default k = 3 if not provided
+        print(f"Teks input: {input_text}, K: {k}")
+        if k is None:  # Tetapkan default jika 'k' tidak diberikan
+            k = 3
+            print(f"Tidak ada nilai k diberikan, menggunakan default: {k}")
+        else:
+            print(f"Nilai k diterima dari klien: {k}")
+        k = int(k)  # Pastikan k di-cast menjadi integer
+
         if not input_text:
+            print("Error: Tidak ada teks yang dimasukkan.")
             return jsonify({'error': 'No input text provided'}), 400
+        if not isinstance(k, int) or k <= 0:
+            print("Error: Nilai k tidak valid.")
+            return jsonify({'error': 'Invalid value for k. It must be a positive integer.'}), 400
 
         # Preprocess the input text
         preprocessed_text = preprocess_text(input_text)
-        # Load original tweets for cosine similarity
-       # Load original tweets for TF-IDF fitting
+        print(f"Teks setelah preprocessing: {preprocessed_text}")
+
+        # Load original tweets for TF-IDF fitting
         original_tweets = pd.read_csv("data_tweet.csv")["rawContent"]
         original_tweets_preprocessed = [preprocess_text(tweet) for tweet in original_tweets]
+        print("Original tweets berhasil diproses.")
 
         # Fit TF-IDF vectorizer
         vectorizer = TfidfVectorizer(max_features=50, lowercase=False)
         vectorizer.fit(original_tweets_preprocessed)
+        print("TF-IDF vectorizer berhasil di-fit.")
 
         # Transform original tweets and input text
         original_tweets_tfidf = vectorizer.transform(original_tweets_preprocessed)
         input_text_tfidf = vectorizer.transform([preprocessed_text])
-
+        print("TF-IDF transform berhasil dilakukan.")
 
         # Normalize the input vector
         input_text_tfidf_normalized = normalize(input_text_tfidf, norm='l1', axis=1)
-        # print(input_text_tfidf_normalized)
+
+        # Train the KNN model
+        knn = KNeighborsClassifier(n_neighbors=k)
+        knn.fit(X, y)
+        print("Model KNN berhasil di-train.")
+
         # Predict the sentiment of the input text
         prediction = knn.predict(input_text_tfidf_normalized)
-        print(prediction)
         sentiment = 'positif' if prediction[0] == 1 else 'negatif'
+        print(f"Hasil prediksi sentimen: {sentiment}")
 
         # Calculate cosine similarity
         cosine_similarities = cosine_similarity(input_text_tfidf_normalized, original_tweets_tfidf).flatten()
+        print("Cosine similarity berhasil dihitung.")
 
         # Get top 3 similar texts
-        # Get top 3 similar texts
-        top_indices = np.argsort(cosine_similarities)[-3:][::-1]
+        top_indices = np.argsort(cosine_similarities)[-k:][::-1]
+        print(f"Top indices: {top_indices}")
+
         top_sentiments = df['label'].iloc[top_indices]
-
-        # Determine sentiment based on the majority sentiment of top 3 similar texts
         sentiment_counts = np.bincount([label_map[sentiment] for sentiment in top_sentiments])
         predicted_sentiment = 'positif' if sentiment_counts[1] > sentiment_counts[0] else 'negatif'
+        print(f"Hasil sentimen mayoritas: {predicted_sentiment}")
+
         results = []
         for i, idx in enumerate(top_indices):
             rank = i + 1
@@ -241,21 +263,115 @@ def KNN():
                 "text": tweet_text
             }
             results.append(result)
-        print(f"TF-IDF Matrix Shape: {input_text_tfidf.shape}")
-        print(f"Predicted Sentiment: {sentiment}")
-        print(f"Cosine Similarities: {cosine_similarities}")
-        print(f"Top Indices: {top_indices}")
-        print(f"Top Sentiments: {top_sentiments}")
+            print(f"Rank {rank}: {result}")
 
         # Return the result
+        print("=== Proses KNN Selesai ===")
         return jsonify({
             'sentiment': predicted_sentiment,
             'preprocess_text': preprocessed_text,
             'results': results
         })
-
     except Exception as e:
+        print(f"Error: {str(e)}")
         return jsonify({'error': str(e)}), 500
+# @app.route('/knn', methods=['POST'])
+# def KNN():
+#     try:
+#         # Load vector data and labels
+#         df = pd.read_csv("pelabelan.csv")
+#         de = pd.read_csv("data_tweet.csv")
+        
+#         # Cek ukuran DataFrame
+#         # Cek ukuran DataFrame sebelum mengakses data
+#         if df.shape[0] <= 1:
+#             return jsonify({'error': 'DataFrame does not have enough rows for slicing.'}), 400
+
+
+
+#         # Extract features and labels
+#         X = df.iloc[:, :-2].values  # Features (excluding 'status' and 'label' columns)
+#         y = df['label'].values  # Labels
+
+#         # Convert labels to numerical values if necessary
+#         label_map = {'positif': 1, 'negatif': 0}
+#         y = np.array([label_map[label] for label in y])
+
+#         if len(np.unique(y)) < 2:
+#             return jsonify({'error': 'The dataset must contain both positive and negative labels.'}), 400
+
+#         # Train the KNN model
+
+#         k = request.json.get('k', 3) # Number of neighbors
+#         knn = KNeighborsClassifier(n_neighbors=k)
+#         knn.fit(X, y)
+
+#         # Get input text from the POST request
+#         input_text = request.json.get('text')
+#         if not input_text:
+#             return jsonify({'error': 'No input text provided'}), 400
+
+#         # Preprocess the input text
+#         preprocessed_text = preprocess_text(input_text)
+#         # Load original tweets for cosine similarity
+#        # Load original tweets for TF-IDF fitting
+#         original_tweets = pd.read_csv("data_tweet.csv")["rawContent"]
+#         original_tweets_preprocessed = [preprocess_text(tweet) for tweet in original_tweets]
+
+#         # Fit TF-IDF vectorizer
+#         vectorizer = TfidfVectorizer(max_features=50, lowercase=False)
+#         vectorizer.fit(original_tweets_preprocessed)
+
+#         # Transform original tweets and input text
+#         original_tweets_tfidf = vectorizer.transform(original_tweets_preprocessed)
+#         input_text_tfidf = vectorizer.transform([preprocessed_text])
+
+
+#         # Normalize the input vector
+#         input_text_tfidf_normalized = normalize(input_text_tfidf, norm='l1', axis=1)
+#         # print(input_text_tfidf_normalized)
+#         # Predict the sentiment of the input text
+#         prediction = knn.predict(input_text_tfidf_normalized)
+#         print(prediction)
+#         sentiment = 'positif' if prediction[0] == 1 else 'negatif'
+
+#         # Calculate cosine similarity
+#         cosine_similarities = cosine_similarity(input_text_tfidf_normalized, original_tweets_tfidf).flatten()
+
+#         # Get top 3 similar texts
+#         # Get top 3 similar texts
+#         top_indices = np.argsort(cosine_similarities)[-3:][::-1]
+#         top_sentiments = df['label'].iloc[top_indices]
+
+#         # Determine sentiment based on the majority sentiment of top 3 similar texts
+#         sentiment_counts = np.bincount([label_map[sentiment] for sentiment in top_sentiments])
+#         predicted_sentiment = 'positif' if sentiment_counts[1] > sentiment_counts[0] else 'negatif'
+#         results = []
+#         for i, idx in enumerate(top_indices):
+#             rank = i + 1
+#             similarity = cosine_similarities[idx]
+#             tweet_text = original_tweets[idx]
+#             result = {
+#                 "rank": rank,
+#                 "similarity": float(similarity),
+#                 "text": tweet_text
+#             }
+#             results.append(result)
+#         print(f"TF-IDF Matrix Shape: {input_text_tfidf.shape}")
+#         print(f"Predicted Sentiment: {sentiment}")
+#         print(f"Cosine Similarities: {cosine_similarities}")
+#         print(f"Top Indices: {top_indices}")
+#         print(f"Top Sentiments: {top_sentiments}")
+
+#         # Return the result
+#         return jsonify({
+#             'sentiment': predicted_sentiment,
+#             'preprocess_text': preprocessed_text,
+#             'results': results
+#         })
+
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
 
 @app.route('/metrics', methods=['POST'])
 def metrics():

@@ -55,11 +55,16 @@
                         <span>TF IDF</span>
                     </a>
                 </li>
-
+                <li>
+                    <a href="pengujian.php">
+                        <i data-feather="globe"></i>
+                        <span> Pengujian </span>
+                    </a>
+                </li>
                 <li>
                     <a href="data-testing.php">
                         <i data-feather="globe"></i>
-                        <span> Data Testing </span>
+                        <span> Evaluasi </span>
                     </a>
                 </li>
                 <!-- <li>

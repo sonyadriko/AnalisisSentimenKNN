@@ -50,82 +50,43 @@
                 <div class="container-xxl">
                     <div class="py-3 d-flex align-items-sm-center flex-sm-row flex-column">
                         <div class="flex-grow-1">
-                            <h4 class="fs-18 fw-semibold m-0">Dashboard</h4>
+                            <h4 class="fs-18 fw-semibold m-0">Pengujian</h4>
                         </div>
                     </div>
                     <div class="row">
                         <div class="row">
-                            <div class="col-md-12">
+                            <div class="col-md-6">
                                 <div class="card">
                                     <div class="card-body">
-                                        <h5 class="card-title mb-4">K Nearest Neighbor</h5>
-                                        <p>
-                                            K Nearest Neighbor (KNN) adalah salah satu algoritma machine learning yang
-                                            digunakan untuk
-                                            klasifikasi dan regresi. Algoritma ini bekerja dengan mencari sejumlah data
-                                            terdekat
-                                            (<i>k neighbors</i>) dari data yang ingin diprediksi. Proses pengambilan
-                                            keputusan didasarkan
-                                            pada mayoritas label dari tetangga terdekatnya. Dalam kasus klasifikasi,
-                                            algoritma KNN
-                                            menentukan kelas dari data berdasarkan frekuensi kelas tetangga yang paling
-                                            mirip.
-                                            Dalam kasus regresi, rata-rata nilai tetangga digunakan sebagai prediksi.
-                                        </p>
-                                        <p>
-                                            KNN sangat mudah diimplementasikan, tetapi performanya bergantung pada
-                                            jumlah tetangga
-                                            (<i>k</i>) yang dipilih, serta pada skala dan ukuran dataset. Penghitungan
-                                            kemiripan
-                                            sering menggunakan jarak Euclidean, Manhattan, atau <i>Cosine
-                                                Similarity</i>,
-                                            tergantung pada jenis data yang dianalisis.
-                                        </p>
+                                        <h5 class="card-title mb-4">Analisis Sentimen</h5>
+                                        <form id="textForm">
+                                            <div class="mb-3">
+                                                <label for="tweetInput" class="form-label">Komentar atau ulasan</label>
+                                                <textarea class="form-control" id="inputText" rows="4"
+                                                    placeholder="Enter text here..." required></textarea>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="kValue" class="form-label">Jumlah (k)</label>
+                                                <input type="number" class="form-control" id="kValue"
+                                                    placeholder="Enter k value" min="1" required>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary">Submit</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title mb-4">Hasil</h5>
+                                        <p>Preprocessing Text: <span id="textpre"></span></p>
+                                        <p>Sentiment: <span id="sentiment"></span></p>
+                                        <ul id="similarTexts"></ul>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <div class="row">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5 class="card-title mb-4">Get Contact</h5>
-                                        <p>
-                                            <i>Get Contact</i> adalah aplikasi yang dirancang untuk membantu pengguna
-                                            dalam
-                                            melacak dan mengenali nomor telepon yang tidak dikenal. Aplikasi ini bekerja
-                                            dengan
-                                            mengidentifikasi informasi seperti nama dan detail pemilik nomor telepon
-                                            berdasarkan
-                                            data yang telah dikumpulkan dari pengguna lain dalam platform.
-                                        </p>
-                                        <p>
-                                            Salah satu fitur utama *Get Contact* adalah kemampuan untuk memblokir
-                                            panggilan atau
-                                            pesan dari nomor yang dicurigai sebagai spam atau penipuan. Selain itu,
-                                            aplikasi ini
-                                            memungkinkan pengguna untuk melihat bagaimana kontak mereka diberi label
-                                            atau
-                                            disimpan dalam daftar kontak pengguna lain, yang sering kali menjadi daya
-                                            tarik utama.
-                                        </p>
-                                        <p>
-                                            Penting untuk memahami bahwa penggunaan aplikasi ini harus mematuhi
-                                            kebijakan privasi
-                                            dan undang-undang yang berlaku, karena pengumpulan dan penggunaan data
-                                            kontak melibatkan
-                                            informasi pribadi yang sensitif.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-
 
                     <!-- <div class="mt-4">
                         <span>Tekan button untuk memulai proses preprocessing dan tfidf data training</span>
@@ -188,8 +149,8 @@
                     Swal.close();
 
                     // Tampilkan hasil dari server
-                    $('#textpre').text(response.preprocess_text);
-                    $('#sentiment').text(response.sentiment);
+                    $('#textpre').html('<b>' + response.preprocess_text + '</b>');
+                    $('#sentiment').html('<b>' + response.sentiment + '</b>');
 
                     var similarTexts = $('#similarTexts');
                     similarTexts.empty();
