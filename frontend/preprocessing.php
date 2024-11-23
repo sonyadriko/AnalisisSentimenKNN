@@ -41,7 +41,7 @@
 
                     <div class="py-3 d-flex align-items-sm-center flex-sm-row flex-column">
                         <div class="flex-grow-1">
-                            <h4 class="fs-18 fw-semibold m-0">Data Training</h4>
+                            <h4 class="fs-18 fw-semibold m-0">Preprocessing</h4>
                             <div class="mt-4">
                                 <span>Tekan button untuk memulai proses preprocessing dan tfidf data training</span>
                                 <button id="startProcessBtn" class="btn btn-success">Mulai Proses</button>
