@@ -50,13 +50,10 @@ Akses aplikasi di http://127.0.0.1:5000.
 ## 📈 Proses Analisis Sentimen
 1. Input Teks
 Pengguna memasukkan teks (contoh: "Aplikasi ini sangat membantu dan mempermudah pekerjaan saya.").
-
 2. Preprocessing
 Teks diproses menjadi format bersih, seperti stemming dan penghapusan stopwords.
-
 3. Prediksi Sentimen
 Model KNN memprediksi apakah teks tersebut bernada positif atau negatif.
-
 4. Kemiripan Teks
 Aplikasi menampilkan 3 teks yang paling mirip berdasarkan skor cosine similarity.
 
@@ -73,5 +70,12 @@ Aplikasi menampilkan 3 teks yang paling mirip berdasarkan skor cosine similarity
 
 ---
 
+## 🏆 Tujuan Proyek
+Proyek ini dirancang untuk:
+1. Menggunakan metode KNN dalam analisis sentimen.
+2. Memberikan pemahaman lebih baik tentang opini masyarakat terhadap aplikasi GetContact
+3. Meningkatkan kemampuan dalam implementasi algoritma pembelajaran mesin.
+
+---
 
 ![Screenshot 2024-07-25 at 22-19-16 KNN Sentiment Analysis](https://github.com/user-attachments/assets/e697180e-ea52-4280-8d63-2709d35eaa9d)
