@@ -39,9 +39,8 @@ Proyek ini bertujuan untuk menganalisis sentimen pengguna terhadap aplikasi **Ge
    ```bash
    pip install -r requirements.txt
 4. Jalankan server Flask:
-  ```bash
-  python app.py
-  ```
+   ```bash
+   python app.py
 5. Buka frontend di browser:
 Akses aplikasi di http://127.0.0.1:5000.
 
