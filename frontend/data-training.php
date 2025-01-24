@@ -66,7 +66,7 @@
                         $errors = [];
                         $file_name = 'data_tweet.csv';
                         $file_tmp = $_FILES['excelFile']['tmp_name'];
-                        $upload_path = '../backend/' . $file_name;
+                        $upload_path = '../backend/files' . $file_name;
                         $file_extension = pathinfo($_FILES['excelFile']['name'], PATHINFO_EXTENSION);
 
                         if ($_FILES['excelFile']['error'] !== UPLOAD_ERR_OK) {
@@ -145,7 +145,7 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        fetch('http://127.0.0.1:5000/data-training')
+        fetch('http://127.0.0.1:5000/api/data-training')
             .then(response => response.json())
             .then(responseData => {
                 const data = responseData.data;

@@ -141,9 +141,9 @@ if (!file_exists($file_path)) {
                 }
             });
 
-            axios.get('http://127.0.0.1:5000/preprocessing')
+            axios.get('http://127.0.0.1:5000/api/preprocessing')
                 .then(response => {
-                    return axios.get('http://127.0.0.1:5000/tf-idf');
+                    return axios.get('http://127.0.0.1:5000/api/tfidf');
                 })
                 .then(response => {
                     Swal.fire({

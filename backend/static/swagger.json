@@ -1,0 +1,38 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "version": "1.0.0",
+        "title": "KNN Sentiment Analysis API",
+        "description": "API untuk analisis sentimen menggunakan metode KNN"
+    },
+    "host": "localhost:5000",
+    "basePath": "/",
+    "schemes": ["http"],
+    "paths": {
+        "/knn": {
+            "post": {
+                "summary": "KNN Analysis",
+                "description": "Menganalisis sentimen berdasarkan input teks menggunakan KNN.",
+                "parameters": [
+                    {
+                        "name": "text",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "text": {"type": "string"},
+                                "k": {"type": "integer", "default": 3}
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {"description": "Success"},
+                    "400": {"description": "Bad Request"},
+                    "500": {"description": "Server Error"}
+                }
+            }
+        }
+    }
+}

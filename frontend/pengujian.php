@@ -138,7 +138,7 @@
 
             // Kirim data ke server Flask
             $.ajax({
-                url: 'http://127.0.0.1:5000/knn',
+                url: 'http://127.0.0.1:5000/api/knn',
                 method: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({

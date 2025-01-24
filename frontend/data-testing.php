@@ -136,42 +136,40 @@
                 }
             });
 
-            axios.post('http://127.0.0.1:5000/metrics')
-                .then(response => {
-                    console.log(response.data);
+            axios.post('http://127.0.0.1:5000/api/metrics/', {}, {
+    headers: {
+        'Content-Type': 'application/json'
+    }
+})
+.then(response => {
+    console.log(response.data);
 
-                    document.getElementById('positif_positif').innerText = response.data
-                        .confusion_matrix[1][1];
-                    document.getElementById('positif_negatif').innerText = response.data
-                        .confusion_matrix[1][0];
-                    document.getElementById('negatif_positif').innerText = response.data
-                        .confusion_matrix[0][1];
-                    document.getElementById('negatif_negatif').innerText = response.data
-                        .confusion_matrix[0][0];
+    document.getElementById('positif_positif').innerText = response.data.confusion_matrix[1][1];
+    document.getElementById('positif_negatif').innerText = response.data.confusion_matrix[1][0];
+    document.getElementById('negatif_positif').innerText = response.data.confusion_matrix[0][1];
+    document.getElementById('negatif_negatif').innerText = response.data.confusion_matrix[0][0];
 
-                    document.getElementById('accuracy').innerText = response.data.accuracy.toFixed(
-                        2);
-                    document.getElementById('precision').innerText = response.data.precision
-                        .toFixed(2);
-                    document.getElementById('recall').innerText = response.data.recall.toFixed(2);
-                    document.getElementById('f1score').innerText = response.data.f1_score.toFixed(
-                        2);
+    document.getElementById('accuracy').innerText = response.data.accuracy.toFixed(2);
+    document.getElementById('precision').innerText = response.data.precision.toFixed(2);
+    document.getElementById('recall').innerText = response.data.recall.toFixed(2);
+    document.getElementById('f1score').innerText = response.data.f1_score.toFixed(2);
 
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Perhitungan selesai',
-                        text: 'Confusion Matrix dan metrik berhasil dihitung!'
-                    });
-                })
-                .catch(error => {
-                    console.error('Error calculating confusion matrix:', error);
+    Swal.fire({
+        icon: 'success',
+        title: 'Perhitungan selesai',
+        text: 'Confusion Matrix dan metrik berhasil dihitung!'
+    });
+})
+.catch(error => {
+    console.error('Error calculating confusion matrix:', error);
 
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Terjadi kesalahan saat menghitung Confusion Matrix dan metrik.'
-                    });
-                });
+    Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Terjadi kesalahan saat menghitung Confusion Matrix dan metrik.'
+    });
+});
+
         });
     });
     </script>
