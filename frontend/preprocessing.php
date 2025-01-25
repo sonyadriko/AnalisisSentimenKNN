@@ -68,7 +68,7 @@
                                                 </thead>
                                                 <tbody>
                                                     <?php
-$file_path = '../backend/Text_Preprocessing.csv';
+$file_path = '../backend/files/Text_Preprocessing.csv';
 
 // Cek apakah file CSV ada
 if (!file_exists($file_path)) {
@@ -88,12 +88,12 @@ if (!file_exists($file_path)) {
         foreach ($preprocessing_data as $row) {
             echo '<tr>';
             echo '<td>' . (isset($row[0]) ? $row[0] : '') . '</td>';
+            echo '<td>' . (isset($row[1]) ? $row[1] : '') . '</td>';
             echo '<td>' . (isset($row[2]) ? $row[2] : '') . '</td>';
             echo '<td>' . (isset($row[3]) ? $row[3] : '') . '</td>';
             echo '<td>' . (isset($row[4]) ? $row[4] : '') . '</td>';
+            echo '<td>' . (isset($row[5]) ? $row[5] : '') . '</td>';
             echo '<td>' . (isset($row[6]) ? $row[6] : '') . '</td>';
-            echo '<td>' . (isset($row[7]) ? $row[7] : '') . '</td>';
-            echo '<td>' . (isset($row[8]) ? $row[8] : '') . '</td>';
             echo '</tr>';
         }
     }

@@ -2242,3 +2242,4 @@
 "ngabisngabisin": "abis",
 "jlk": "jelek",
 "watsaap": "whatsapp",
+"namain": "nama",

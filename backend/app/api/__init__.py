@@ -3,7 +3,14 @@ from flask_restx import Api
 
 # Create Blueprint
 api_bp = Blueprint('api', __name__)
-api = Api(api_bp, doc='/swagger')  # Swagger aktif di /api/swagger
+api = Api(
+    api_bp,
+    version='1.0',
+    title='Analisis Sentimen API',
+    description='API untuk analisis sentimen menggunakan metode KNN',
+    doc='/swagger'  # Swagger aktif di /api/swagger
+)
+
 
 # Import namespaces
 from .knn import knn_ns

@@ -7,22 +7,17 @@
             <div class="logo-box">
                 <a href="index.php" class="logo logo-light">
                     <span class="logo-sm">
-                        <!-- <img src="assets/images/logo-sm.png" alt="" height="22"> -->
                         <span style="font-size: 22px;">KNN</span>
                     </span>
                     <span class="logo-lg">
-                        <!-- <img src="assets/images/logo-light.png" alt="" height="24"> -->
                         <span style="font-size: 22px;">KNN</span>
-
                     </span>
                 </a>
                 <a href="index.php" class="logo logo-dark">
                     <span class="logo-sm">
-                        <!-- <img src="assets/images/logo-sm.png" alt="" height="22"> -->
                         <span style="font-size: 22px;">KNN</span>
                     </span>
                     <span class="logo-lg">
-                        <!-- <img src="assets/images/logo-dark.png" alt="" height="24"> -->
                         <span style="font-size: 22px;">KNN</span>
                     </span>
                 </a>
@@ -39,38 +34,38 @@
 
                 <li>
                     <a href="data-training.php">
-                        <i data-feather="aperture"></i>
+                        <i data-feather="database"></i>
                         <span> Data Training </span>
                     </a>
                 </li>
                 <li>
                     <a href="preprocessing.php">
-                        <i data-feather="aperture"></i>
-                        <span>Preprocessing</span>
+                        <i data-feather="filter"></i>
+                        <span> Preprocessing </span>
                     </a>
                 </li>
                 <li>
                     <a href="tf-idf.php">
-                        <i data-feather="aperture"></i>
-                        <span>TF IDF</span>
+                        <i data-feather="layers"></i>
+                        <span> TF-IDF </span>
                     </a>
                 </li>
                 <li>
                     <a href="pengujian.php">
-                        <i data-feather="globe"></i>
+                        <i data-feather="check-circle"></i>
                         <span> Pengujian </span>
                     </a>
                 </li>
                 <li>
                     <a href="data-testing.php">
-                        <i data-feather="globe"></i>
+                        <i data-feather="bar-chart-2"></i>
                         <span> Evaluasi </span>
                     </a>
                 </li>
                 <!-- <li>
                     <a href="chart.php">
-                        <i data-feather="globe"></i>
-                        <span>Chart </span>
+                        <i data-feather="pie-chart"></i>
+                        <span> Chart </span>
                     </a>
                 </li> -->
             </ul>
