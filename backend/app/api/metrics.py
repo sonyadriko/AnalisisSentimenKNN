@@ -40,8 +40,8 @@ class MetricsResource(Resource):
                 return {'error': 'Nilai k harus lebih besar dari 0.'}, 400
 
             # Load data
-            df = pd.read_csv("pelabelan.csv")
-            de = pd.read_csv("data_tweet.csv")
+            df = pd.read_csv("files/pelabelan.csv")
+            de = pd.read_csv("files/data_tweet.csv")
 
             # Extract features and labels
             X = df.iloc[:, :-2].values

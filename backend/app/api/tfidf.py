@@ -23,11 +23,11 @@ class TFIDFResource(Resource):
         """Hitung TF-IDF dan simpan hasilnya"""
         try:
             # Load preprocessed data
-            tweet_data = pd.read_csv("Text_Preprocessing.csv", usecols=["tweet_tokens_stemmed"])
-            tweet_data.columns = ["tweet_tokens_stemmed"]
+            tweet_data = pd.read_csv("files/Text_Preprocessing.csv", usecols=["stemmed"])
+            tweet_data.columns = ["stemmed"]
 
             # Join token lists into single strings
-            tweet_data["tweet_join"] = tweet_data["tweet_tokens_stemmed"].apply(lambda x: ' '.join(eval(x)))
+            tweet_data["tweet_join"] = tweet_data["stemmed"].apply(lambda x: ' '.join(eval(x)))
 
             # Initialize CountVectorizer
             cvect = CountVectorizer(max_features=50, lowercase=False)
@@ -44,15 +44,15 @@ class TFIDFResource(Resource):
             tfidf_df = pd.DataFrame(normalized_tfidf_matrix.toarray(), columns=cvect.get_feature_names_out())
 
             # Save TF-IDF matrix to CSV
-            tfidf_df.to_csv("hasil_vector_matrix.csv", index=False)
+            tfidf_df.to_csv("files/hasil_vector_matrix.csv", index=False)
 
             # Add labels to data
-            data_tweet = pd.read_csv('data_tweet.csv')
+            data_tweet = pd.read_csv('files/data_tweet.csv')
             tfidf_df['status'] = data_tweet['status']
             tfidf_df['label'] = data_tweet['status'].apply(lambda x: 'negatif' if x in [1, 2] else 'positif')
 
             # Save labeled data
-            tfidf_df.to_csv("pelabelan.csv", index=False)
+            tfidf_df.to_csv("files/pelabelan.csv", index=False)
 
             # Get the last row of labeled data
             last_row_data = tfidf_df.tail(1).to_dict(orient='records')

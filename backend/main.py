@@ -4,6 +4,12 @@ from app.api import api_bp
 from flask_cors import CORS
 
 app = Flask(__name__)
+# Log untuk memastikan middleware aktif
+def after_request_log(response):
+    app.logger.info("CORS Headers Applied: %s", response.headers)
+    return response
+
+app.after_request(after_request_log)
 CORS(app)
 # Inisialisasi Api
 api = Api(app, version='1.0', title='Analisis Sentimen API',

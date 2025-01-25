@@ -25,7 +25,7 @@ class PreprocessingResource(Resource):
         """Perform preprocessing on tweet data"""
         try:
             # Load dataset
-            tweet_data = pd.read_csv("data_tweet.csv")
+            tweet_data = pd.read_csv("files/data_tweet.csv")
             tweet_data = tweet_data[['rawContent']]
 
             # Case folding
@@ -79,7 +79,7 @@ class PreprocessingResource(Resource):
             tweet_data['stemmed'] = tweet_data['normalized'].apply(stem_words)
 
             # Save processed data
-            tweet_data.to_csv("Text_Preprocessing.csv", index=False)
+            tweet_data.to_csv("files/Text_Preprocessing.csv", index=False)
 
             return {
                 "message": "Preprocessing berhasil",

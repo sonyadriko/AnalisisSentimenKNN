@@ -11,7 +11,7 @@ class DataTrainingResource(Resource):
     def get(self):
         """Endpoint untuk mendapatkan data training"""
         # Memuat data
-        TWEET_DATA = pd.read_csv("data_tweet.csv", usecols=['rawContent', 'status'])
+        TWEET_DATA = pd.read_csv("files/data_tweet.csv", usecols=['rawContent', 'status'])
 
         data_list = []
         positif_count = 0
