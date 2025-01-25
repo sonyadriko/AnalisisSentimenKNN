@@ -10,30 +10,6 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <link href="assets/css/app.min.css" rel="stylesheet" type="text/css" id="app-style" />
     <link href="assets/css/icons.min.css" rel="stylesheet" type="text/css" />
-    <!-- <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet"> -->
-    <style>
-    #result {
-        margin-top: 20px;
-    }
-
-    #result h2,
-    #result h3 {
-        color: #333;
-    }
-
-    #similarTexts {
-        list-style-type: none;
-        padding: 0;
-    }
-
-    #similarTexts li {
-        background-color: #f9f9f9;
-        margin-bottom: 10px;
-        padding: 10px;
-        border-radius: 4px;
-        border: 1px solid #ddd;
-    }
-    </style>
 </head>
 
 <body data-menu-color="dark" data-sidebar="default">
@@ -124,13 +100,6 @@
                             </div>
                         </div>
                     </div>
-
-
-
-                    <!-- <div class="mt-4">
-                        <span>Tekan button untuk memulai proses preprocessing dan tfidf data training</span>
-                        <button id="startProcessBtn" class="btn btn-success">Mulai Proses</button>
-                    </div> -->
                 </div> <!-- container-fluid -->
             </div> <!-- content -->
             <!-- Footer Start -->
