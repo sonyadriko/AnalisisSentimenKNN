@@ -1,1 +1,0 @@
-"use strict";var lightbox=GLightbox({selector:".image-popup",title:!1}),lightboxInlineIframe=GLightbox({selector:".map-frame"});
