@@ -14,7 +14,7 @@ Proyek ini bertujuan untuk menganalisis sentimen pengguna terhadap aplikasi **Ge
 
 ## 🛠️ Teknologi yang Digunakan
 - **Backend**: Flask, Blueprint, Swagger (Python)  
-- **Frontend**: HTML, CSS, JavaScript, Bootstrap  
+- **Frontend**: React JS, Tailwind CSS, Shadcn UI
 - **Database**: CSV (pelabelan data & vektor data)  
 - **Library Pendukung**:
   - `scikit-learn`: Untuk algoritma KNN dan evaluasi model.
@@ -77,8 +77,9 @@ Proyek ini dirancang untuk:
 
 ---
 
-screenshot dokumentasi API:
+Screenshot dokumentasi API:
 <img width="1427" alt="image" src="https://github.com/user-attachments/assets/5598032c-3da0-4b3c-af91-5104e832184a" />
 
+Screenshot proses pengujian data testing
+<img width="1438" alt="image" src="https://github.com/user-attachments/assets/69b4b8c2-a96c-46c3-b621-2a537f30ff07" />
 
-![Screenshot 2024-07-25 at 22-19-16 KNN Sentiment Analysis](https://github.com/user-attachments/assets/e697180e-ea52-4280-8d63-2709d35eaa9d)
