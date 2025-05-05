@@ -83,3 +83,4 @@ Screenshot dokumentasi API:
 Screenshot proses pengujian data testing
 <img width="1438" alt="image" src="https://github.com/user-attachments/assets/69b4b8c2-a96c-46c3-b621-2a537f30ff07" />
 
+# lexicon
